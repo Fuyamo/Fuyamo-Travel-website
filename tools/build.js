@@ -388,8 +388,9 @@ function run(argv) {
     + 'window.FUYAMO_DATA = ' + JSON.stringify(data, null, 1) + ';\n');
 
   // 3. Load the same scripts the browser runs.
+  // Each script gets the same stand-in for the browser's window (passed in, so it works on every macOS version).
   const window = {};
-  SCRIPTS.slice(0, -1).forEach((s) => eval(read(SITE_DIR + '/' + s)));
+  SCRIPTS.slice(0, -1).forEach((s) => new Function('window', read(SITE_DIR + '/' + s))(window));
   const R = window.FUYAMO_RENDER, C = R.C;
   const siteUrl = C.SITE.url.replace(/\/+$/, '');
 
