@@ -10,7 +10,7 @@ Use the admin for everyday changes, from any computer or phone:
 
 Photos can be any size, including straight from a phone. The site turns them upright and shrinks them.
 
-**Saving publishes.** Each save is stored on GitHub (github.com/Fuyamo/Fuyamo-Travel-website). GitHub then rebuilds the site and uploads it to Afrihost, and the change is live about 3 minutes later. The repository's **Actions** tab shows each publish; a red cross means it didn't go through, and the log says why. Every earlier version is kept on GitHub, so any change can be undone.
+**Saving publishes.** Each save is stored on GitHub (github.com/Fuyamo/Fuyamo-Travel-website). GitHub rebuilds the site in about 2 minutes, and your Afrihost hosting picks up the new version within 5 minutes, so changes are live 5–10 minutes after saving. The repository's **Actions** tab shows each build: a red cross means it didn't go through, and the run's page says why. Every earlier version is kept on GitHub, so any change can be undone.
 
 **Signing in:** on the admin's sign-in screen, choose "Sign In Using Access Token" and paste a GitHub access token. To make one: on GitHub, go to Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Set the owner to **Fuyamo**, limit it to the **Fuyamo-Travel-website** repository, and give it **Contents: Read and write**. The admin remembers the token on that device. When it expires, make a new one.
 
@@ -26,15 +26,21 @@ Photos can be any size, including straight from a phone. The site turns them upr
 
 The handoff zip and the reference images next to `site/` stay on this computer and aren't on GitHub.
 
-## Going live (replacing the WordPress site)
+## How publishing works
 
-1. In the Afrihost control panel, **back up the WordPress site**, then remove its files from the website folder (`public_html`). Don't change DNS or email settings: your email runs on Google and must stay as it is.
-2. On GitHub, under the repository's Settings → Secrets and variables → Actions, add three secrets: `FTP_SERVER` (e.g. `ftp.fuyamo.co.za`), `FTP_USERNAME` and `FTP_PASSWORD`, from Afrihost's FTP details. If the website folder isn't `public_html/`, add a variable `FTP_DIR` with its path.
-3. In the repository's **Actions** tab, run **Publish website**. It uploads the whole site, including the hidden `.htaccess` file. That file sends visitors to https://fuyamo.co.za, shows the "Page not found" page, and forwards the old WordPress addresses.
-4. **Activate the forms:** send one enquiry from the live site, then click "Activate Form" in the email FormSubmit sends to info@fuyamo.co.za. Then test the corporate form, the "Leave your number" card and the birthday popup (`fuyamo.co.za/?offer`).
-5. Open Google Analytics → **Reports → Realtime** and check that your own visit shows up.
-6. Add the site to Google Search Console and submit `https://fuyamo.co.za/sitemap.xml` (see "Search engines" below).
-7. On your phone, open a trip and check three things: "Reserve seat" opens the right Yamo trip, "Trip details" downloads the PDF, and Share works.
+1. A save in the admin (or a push to the `main` branch) starts **Publish website** on GitHub (`.github/workflows/publish.yml`). It builds the pages on a Mac and puts the finished site on the `live` branch.
+2. On Afrihost, a cron job (cPanel → Cron Jobs) runs `/home/fuyamamk/fuyamo-deploy.sh` every 5 minutes. When `live` has changed, it copies the new version into `public_html` and adds a line to `/home/fuyamamk/fuyamo-deploy.log`. A copy of the script is in `tools/fuyamo-deploy.sh`.
+
+No passwords are stored anywhere for this. To publish again without changing anything, run **Publish website** from the Actions tab.
+
+The old WordPress site was backed up (`backup-10.19.2026_14-58-08_fuyamamk.tar.gz` in the hosting home folder) and its files moved to `/home/fuyamamk/wordpress-old`. Once you're sure you don't need them, delete that folder and the `fuyamamk_wp141` database in cPanel.
+
+## After launch
+
+1. **Activate the forms:** send one enquiry from the live site, then click "Activate Form" in the email FormSubmit sends to info@fuyamo.co.za. Then test the corporate form, the "Leave your number" card and the birthday popup (`fuyamo.co.za/?offer`).
+2. Open Google Analytics → **Reports → Realtime** and check that your own visit shows up.
+3. Add the site to Google Search Console and submit `https://fuyamo.co.za/sitemap.xml` (see "Search engines" below).
+4. On your phone, open a trip and check three things: "Reserve seat" opens the right Yamo trip, "Trip details" downloads the PDF, and Share works.
 
 ## Writing articles without the admin
 
