@@ -30,8 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The build's summary (and anything that needs attention) is shown on the run's page.
       - name: Build the pages
-        run: osascript -l JavaScript tools/build.js "$PWD"
+        run: |
+          set -o pipefail
+          osascript -l JavaScript tools/build.js "$PWD" 2>&1 | tee build.log || { echo "::error title=Build failed::$(tail -c 1500 build.log | tr '\n' ' ')"; exit 1; }
+          echo "::notice title=Build::$(tail -c 1500 build.log | tr '\n' ' ')"
 
       - name: Upload skipped
         if: env.CAN_UPLOAD != 'true'
