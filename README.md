@@ -2,24 +2,28 @@
 
 ## The admin: fuyamo.co.za/admin
 
-Use the admin for everyday changes, from any computer or phone:
+The Fuyamo dashboard, for everyday changes from any computer or phone:
 
-- **Travel Talk:** write, edit or remove articles, with photos.
-- **Trips:** prices, deposits, departure dates with their Yamo links, what's included, extras and photos. Add a new trip, or hide one without deleting it.
-- **Photos, FAQs & reviews:** every section's photos (page headers, intro pills, Why cards, Moments, About, Services and the rest), the questions and answers, and the Google reviews with your rating and review count.
+- **Overview:** visitors, the next departures, recent changes and whether the latest save is live yet.
+- **Trips:** prices, deposits, departure dates with their Yamo links, what's included, extras, photos and the trip details PDF. Add a trip, or hide one without deleting it.
+- **Articles:** write, edit or remove Travel Talk articles, with photos.
+- **Photos:** every section's photos: page headers, intro pills, Why cards, Moments, About, Services and the rest.
+- **FAQs** and **Reviews** (with your Google rating and review count).
+- **Analytics:** visitors, top pages, how people found the site, devices, countries and the "Reserve seat" vs "Secure seat" result.
 
-Photos can be any size, including straight from a phone. The site turns them upright and shrinks them.
+Photos can be any size, straight from a phone. The site shrinks them and turns them upright.
 
-**Saving publishes.** Each save is stored on GitHub (github.com/Fuyamo/Fuyamo-Travel-website). GitHub rebuilds the site in about 2 minutes, and your Afrihost hosting picks up the new version within 5 minutes, so changes are live 5–10 minutes after saving. The repository's **Actions** tab shows each build: a red cross means it didn't go through, and the run's page says why. Every earlier version is kept on GitHub, so any change can be undone.
+**Saving publishes.** Each save goes to GitHub (github.com/Fuyamo/Fuyamo-Travel-website). GitHub rebuilds the site in about 2 minutes, and the hosting picks up the new version within 5 minutes, so changes are live 5–10 minutes after saving. The status at the top of the admin shows where a change is: building, going live or live. Every earlier version is kept on GitHub, so any change can be undone.
 
-**Signing in:** on the admin's sign-in screen, choose "Sign In Using Access Token" and paste a GitHub access token. To make one: on GitHub, go to Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Set the owner to **Fuyamo**, limit it to the **Fuyamo-Travel-website** repository, and give it **Contents: Read and write**. The admin remembers the token on that device. When it expires, make a new one.
+**Signing in** is with the team's code. The first time, the admin asks for a GitHub token and a code. The token is stored on GitHub locked with the code (`admin/key.json`), so after that people only need the code. Settings has "Change the sign-in code" and "Replace GitHub access" for when the token expires (about once a year).
 
-**Analytics:** fuyamo.co.za/admin/analytics has the dashboard and links to Google Analytics and Search Console.
+**Analytics** needs a one-time Google setup (Settings → Google Analytics explains the steps). After that, each person sees the numbers by signing in with a Google account that has access to the site's Google Analytics.
 
 ## What's in this folder
 
 - **`site/`**: the website itself (pages are generated into it).
 - **`content/`**, **`posts/`** and **`photos/`**: trips, FAQs, reviews, articles and photos. The admin edits these.
+- **`site/admin/`**: the admin itself (`admin.js`, `admin.css`).
 - **`site/js/content.js`**: contact and bank details, page titles and descriptions, and the wording of each section. Ask your developer for changes here.
 - **`build.command`**: rebuilds the pages on this Mac to preview changes before they go live. GitHub runs the same build when publishing.
 - **`.github/workflows/publish.yml`**: the automatic publishing to Afrihost.

@@ -134,7 +134,8 @@ function readPosts(root, photo, notes) {
       img = meta.image.includes('/') ? meta.image.replace(/^\//, '') : 'assets/photos/' + meta.image;
       if (!exists(root + '/site/' + img)) notes.push(`${where}: the photo ${img} isn't in site/.`);
     }
-    const body = m[2].replace(/\]\((\/?photos\/[^)\s]+)\)/g, (all, src) => '](/' + photo(src, 'posts', where) + ')');
+    // Photos inside the text; the admin writes their addresses with spaces as %20.
+    const body = m[2].replace(/\]\((\/?photos\/[^)\s]+)\)/g, (all, src) => '](/' + photo(decodeURIComponent(src), 'posts', where) + ')');
     const words = body.split(/\s+/).filter(Boolean).length;
     return {
       slug: file.replace(/\.md$/, ''), title: meta.title, cat: meta.category, date: meta.date,
@@ -240,6 +241,8 @@ function loadContent(root, photo, notes) {
         cover: photo(t.cover, 'trips', `Trips → ${t.name} → cover`),
         gallery: (t.gallery || []).map((src, i) => photo(src, 'trips', `Trips → ${t.name} → gallery ${i + 1}`)),
         departures: (t.departures || []).map((d) => ({ dates: d.dates, yamo: withRef(d.yamo) })),
+        // The trip's details PDF (uploaded in the admin), if there is one yet.
+        has_pdf: !!(t.departures || []).length && exists(`${root}/site/assets/trips/fuyamo-${t.departures[0].dates.slice(-4)}-${t.key}.pdf`),
       });
     });
   return { trips, photos, faqs: readJson(dir + '/faqs.json').faqs, reviews: readJson(dir + '/reviews.json') };
@@ -426,7 +429,7 @@ function run(argv) {
   }, R, versions, siteUrl, today));
   R.TRIPS.forEach((t) => {
     if (coverImage(SITE_DIR + '/' + t.hero, SITE_DIR + '/' + t.thumb, THUMB_SIZE, THUMB_SIZE, 72)) images++;
-    if (!exists(SITE_DIR + '/' + t.pdf)) notes.push(`The "Trip details" button on ${t.fullName} has no PDF yet. Add it as site/${t.pdf}.`);
+    if (!t.hasPdf) notes.push(`${t.fullName} has no trip details PDF yet, so its "Trip details" button is hidden. Upload one in the admin (Trips).`);
   });
 
   // 5. Search engines.

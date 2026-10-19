@@ -604,7 +604,7 @@ window.FUYAMO_RENDER = (function (C) {
           <div class="trip__top">
             <nav class="crumbs" aria-label="Breadcrumb"><a href="${link('trips')}" class="trip__back">← All trips</a></nav>
             <div class="trip__acts">
-              <a href="${esc(t.pdf)}" download="${esc('Fuyamo ' + t.dates[0].slice(-4) + ' ' + t.fullName + '.pdf')}" class="trip-act">${icon(SHARE_ICONS.download, 16, 1.8)}Trip details<small>PDF</small></a>
+              ${t.hasPdf ? `<a href="${esc(t.pdf)}" download="${esc('Fuyamo ' + t.dates[0].slice(-4) + ' ' + t.fullName + '.pdf')}" class="trip-act">${icon(SHARE_ICONS.download, 16, 1.8)}Trip details<small>PDF</small></a>` : ''}
               <a href="${esc(shareWhatsApp(t))}" ${EXT} class="trip-act" data-action="share" aria-haspopup="dialog" aria-controls="share" aria-expanded="false">${icon(SHARE_ICONS.share, 16, 1.8)}Share</a>
             </div>
           </div>

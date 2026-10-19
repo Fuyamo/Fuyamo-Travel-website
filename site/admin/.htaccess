@@ -1,0 +1,5 @@
+# The admin's files change without a new address, so browsers always check for the latest version.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 0 seconds"
+</IfModule>

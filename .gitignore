@@ -1,7 +1,6 @@
 # Made by build.command. GitHub builds them again before publishing, so they aren't stored.
 /site/**/index.html
 !/site/admin/index.html
-!/site/admin/analytics/index.html
 /site/404.html
 /site/sitemap.xml
 /site/robots.txt

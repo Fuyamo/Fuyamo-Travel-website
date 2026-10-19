@@ -111,7 +111,7 @@ window.FUYAMO = (function () {
     dates: t.departures.map((d) => d.dates),
     yamo: t.departures.map((d) => d.yamo || ''),
     included: t.included || [], optional: t.optional || [],
-    cover: t.cover, gallery: t.gallery || [],
+    cover: t.cover, gallery: t.gallery || [], hasPdf: !!t.has_pdf,
   }));
 
   const WHY_ICONS = {
