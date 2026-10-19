@@ -1,12 +1,7 @@
 # Publishes fuyamo.co.za. Runs after every change (a save in the admin, or a push), and can be run by hand
-# from the Actions tab. It builds the pages on a Mac (the build uses macOS's image tools), then uploads only
-# what changed to Afrihost over FTPS.
-#
-# Needs three repository secrets (Settings → Secrets and variables → Actions):
-#   FTP_SERVER    e.g. ftp.fuyamo.co.za
-#   FTP_USERNAME  the Afrihost FTP user
-#   FTP_PASSWORD  its password
-# and optionally a variable FTP_DIR, the website folder on the server (default public_html/).
+# from the Actions tab. It builds the pages on a Mac (the build uses macOS's image tools) and puts the finished
+# site on the "live" branch. The hosting checks that branch every 5 minutes and copies any new version into
+# public_html (a cron job on Afrihost, see README), so no passwords are stored here.
 
 name: Publish website
 
@@ -15,7 +10,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# One publish at a time; a newer change waits for the current upload to finish.
+permissions:
+  contents: write # to update the live branch
+
+# One publish at a time; a newer change waits for the current one to finish.
 concurrency:
   group: publish
   cancel-in-progress: false
@@ -24,9 +22,6 @@ jobs:
   publish:
     runs-on: macos-latest
     timeout-minutes: 20
-    env:
-      # Until the FTP secrets are added, the site is built (to check it) but not uploaded.
-      CAN_UPLOAD: ${{ secrets.FTP_SERVER != '' && secrets.FTP_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -37,20 +32,13 @@ jobs:
           osascript -l JavaScript tools/build.js "$PWD" 2>&1 | tee build.log || { echo "::error title=Build failed::$(tail -c 1500 build.log | tr '\n' ' ')"; exit 1; }
           echo "::notice title=Build::$(tail -c 1500 build.log | tr '\n' ' ')"
 
-      - name: Upload skipped
-        if: env.CAN_UPLOAD != 'true'
-        run: echo "::notice::Built but not uploaded. Add the FTP_SERVER, FTP_USERNAME and FTP_PASSWORD secrets to publish to Afrihost."
-
-      - name: Upload to Afrihost
-        if: env.CAN_UPLOAD == 'true'
-        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          # Shared hosting certificates often name the server rather than ftp.fuyamo.co.za; the connection is
-          # still encrypted.
-          security: loose
-          local-dir: ./site/
-          server-dir: ${{ vars.FTP_DIR || 'public_html/' }}
+      # The live branch holds only the finished site (one commit, replaced each time).
+      - name: Put the site on the live branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd site
+          git init -q -b live
+          git add -A
+          git -c user.name="Fuyamo publisher" -c user.email="info@fuyamo.co.za" commit -qm "Site built from ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" live
