@@ -24,13 +24,21 @@ jobs:
   publish:
     runs-on: macos-latest
     timeout-minutes: 20
+    env:
+      # Until the FTP secrets are added, the site is built (to check it) but not uploaded.
+      CAN_UPLOAD: ${{ secrets.FTP_SERVER != '' && secrets.FTP_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Build the pages
         run: osascript -l JavaScript tools/build.js "$PWD"
 
+      - name: Upload skipped
+        if: env.CAN_UPLOAD != 'true'
+        run: echo "::notice::Built but not uploaded. Add the FTP_SERVER, FTP_USERNAME and FTP_PASSWORD secrets to publish to Afrihost."
+
       - name: Upload to Afrihost
+        if: env.CAN_UPLOAD == 'true'
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_SERVER }}
