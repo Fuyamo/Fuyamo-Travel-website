@@ -58,11 +58,12 @@ function coverImage(src, dest, width, height, quality) {
 
 // ---------- Travel Talk posts (Markdown) ----------
 
-// **bold**, *italic* and [links](address). Site links can be written as /trips/bali/.
+// **bold**, *italic* or _italic_, and [links](address). Site links can be written as /trips/bali/.
 function inline(text) {
   return esc(text)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/(^|[\s(])_(\S(?:.*?\S)?)_(?=[\s.,;:!?)]|$)/g, '$1<em>$2</em>')
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, label, href) => /^https?:/.test(href)
       ? `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
       : `<a href="${href.replace(/^\//, '')}">${label}</a>`);
