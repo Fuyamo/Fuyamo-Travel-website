@@ -1,0 +1,57 @@
+{
+  "key": "mozambique",
+  "order": 8,
+  "name": "Mozambique",
+  "edition": "",
+  "menu_label": "Mozambique",
+  "place": "MOZAMBIQUE",
+  "subtitle": "MAPUTO · BILENE",
+  "type": "road",
+  "family": false,
+  "nights": "4 nights · 5 days",
+  "price": "R9,200",
+  "prices": [],
+  "deposit": "R2,500",
+  "reference": "Mozambique",
+  "blurb": "A road trip to the coast. Two nights of Maputo city life and South Beach, then two in Bilene with a boat cruise out to Coco Island.",
+  "departures": [
+    {
+      "dates": "12–16 Feb 2027",
+      "yamo": "https://app.yamo.travel/t/5084b4e2-0342-43ff-87ec-8fb477835248?ref=fuyamo-site"
+    },
+    {
+      "dates": "2–6 Apr 2027",
+      "yamo": "https://app.yamo.travel/t/7427ae36-ac07-4048-af6a-c400422f5413?ref=fuyamo-site"
+    },
+    {
+      "dates": "10–14 Sep 2027",
+      "yamo": "https://app.yamo.travel/t/f21f6f39-c08b-44e6-ae49-d94a9149b2cf?ref=fuyamo-site"
+    },
+    {
+      "dates": "26–30 Nov 2027",
+      "yamo": "https://app.yamo.travel/t/c8f2f2a7-a39b-47ae-9ab9-9dfe4c5051ca?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Road transport",
+    "2 nights in Maputo",
+    "Maputo city tour",
+    "South Beach experience",
+    "2 nights in Bilene",
+    "Boat cruise to Coco Island"
+  ],
+  "optional": [
+    "Canoeing",
+    "Speed tubing",
+    "Beach quad biking",
+    "Beach horse riding",
+    "Jet ski",
+    "Fish market"
+  ],
+  "cover": "/photos/trips/mozambique/1 cover.webp",
+  "gallery": [
+    "/photos/trips/mozambique/2.webp",
+    "/photos/trips/mozambique/3.webp",
+    "/photos/trips/mozambique/4.webp"
+  ]
+}

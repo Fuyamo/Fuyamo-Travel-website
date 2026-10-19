@@ -1,0 +1,49 @@
+{
+  "key": "thailand",
+  "order": 2,
+  "name": "Thailand",
+  "edition": "",
+  "menu_label": "Thailand",
+  "place": "THAILAND · UAE",
+  "subtitle": "VIA DUBAI · PHUKET · PHI PHI",
+  "type": "fly",
+  "family": false,
+  "nights": "6 nights · 7 days",
+  "price": "R29,500",
+  "prices": [],
+  "deposit": "R3,500",
+  "reference": "Thailand",
+  "blurb": "Two destinations in one trip. A desert stopover in Dubai, then Phuket: island hopping to Phi Phi, the Big Buddha, an elephant sanctuary and Old Town.",
+  "departures": [
+    {
+      "dates": "15–21 Jun 2027",
+      "yamo": "https://app.yamo.travel/t/3d9ec687-4176-49aa-9556-9007f2d771dd?ref=fuyamo-site"
+    },
+    {
+      "dates": "5–11 Dec 2027",
+      "yamo": "https://app.yamo.travel/t/c4dc6e11-905f-44fa-93b8-dca2d7dc0f7c?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Flights via Dubai and all transfers, Johannesburg to Phuket",
+    "Accommodation with daily breakfast",
+    "Ground transport",
+    "Phuket Ancient City tour",
+    "Island hopping — Phi Phi or Maya Bay",
+    "Elephant sanctuary",
+    "Big Buddha on Nakkerd Hill",
+    "Phuket Old Town architecture walk",
+    "Dubai desert experience (stopover)"
+  ],
+  "optional": [
+    "Yona Beach Club",
+    "Dubai desert quad bikes",
+    "Desert jeep"
+  ],
+  "cover": "/photos/trips/thailand/1 cover.webp",
+  "gallery": [
+    "/photos/trips/thailand/2.webp",
+    "/photos/trips/thailand/3.webp",
+    "/photos/trips/thailand/4.webp"
+  ]
+}

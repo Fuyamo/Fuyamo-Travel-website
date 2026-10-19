@@ -1,0 +1,56 @@
+{
+  "key": "lesothofam",
+  "order": 7,
+  "name": "Lesotho Snowcation",
+  "edition": "Family Edition",
+  "menu_label": "Lesotho · Family Edition",
+  "place": "LESOTHO",
+  "subtitle": "VIA CLARENS · AFRISKI",
+  "type": "road",
+  "family": true,
+  "nights": "2 nights · 3 days",
+  "price": "R6,500",
+  "prices": [
+    {
+      "amount": "R7,000",
+      "label": "pp parents"
+    },
+    {
+      "amount": "R6,500",
+      "label": "per child"
+    }
+  ],
+  "deposit": "R2,500",
+  "reference": "Lesotho Family",
+  "blurb": "The same snow weekend, built for families. Bring the kids for Clarens adventures and a full day at Afriski, with separate pricing for children.",
+  "departures": [
+    {
+      "dates": "2–4 Jul 2027",
+      "yamo": "https://app.yamo.travel/t/24da3389-1371-4eac-9a7f-8bf0c3446f16?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Road transport",
+    "Accommodation with daily breakfast",
+    "Daily transport to activities",
+    "Clarens Xtreme adventure experience",
+    "Afriski Mountain Resort full-day pass",
+    "Basotho cultural village tour"
+  ],
+  "optional": [
+    "Skiing",
+    "Bum boarding",
+    "Tubing",
+    "Zipline",
+    "Quad biking",
+    "Paintball",
+    "Archery",
+    "Wall climbing"
+  ],
+  "cover": "/photos/trips/lesothofam/1 cover.webp",
+  "gallery": [
+    "/photos/trips/lesothofam/2.webp",
+    "/photos/trips/lesothofam/3.webp",
+    "/photos/trips/lesothofam/4.webp"
+  ]
+}

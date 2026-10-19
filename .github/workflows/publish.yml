@@ -1,0 +1,44 @@
+# Publishes fuyamo.co.za. Runs after every change (a save in the admin, or a push), and can be run by hand
+# from the Actions tab. It builds the pages on a Mac (the build uses macOS's image tools), then uploads only
+# what changed to Afrihost over FTPS.
+#
+# Needs three repository secrets (Settings → Secrets and variables → Actions):
+#   FTP_SERVER    e.g. ftp.fuyamo.co.za
+#   FTP_USERNAME  the Afrihost FTP user
+#   FTP_PASSWORD  its password
+# and optionally a variable FTP_DIR, the website folder on the server (default public_html/).
+
+name: Publish website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One publish at a time; a newer change waits for the current upload to finish.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the pages
+        run: osascript -l JavaScript tools/build.js "$PWD"
+
+      - name: Upload to Afrihost
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          # Shared hosting certificates often name the server rather than ftp.fuyamo.co.za; the connection is
+          # still encrypted.
+          security: loose
+          local-dir: ./site/
+          server-dir: ${{ vars.FTP_DIR || 'public_html/' }}

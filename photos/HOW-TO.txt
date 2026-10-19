@@ -1,0 +1,9 @@
+PHOTOS
+======
+
+This folder holds the original photo files for the website. Choose which photo goes where in the admin
+(fuyamo.co.za/admin): Photos, FAQs & reviews → Photos, and each trip under Trips. New photos you upload
+there are saved here, and the build makes web-sized copies in site/assets/img/.
+
+The subfolders (headers, trips, moments, …) hold the photos the site started with. spare/ isn't used on
+the site; it's a place to keep photos you might use later.

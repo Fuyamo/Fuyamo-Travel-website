@@ -1,0 +1,37 @@
+{
+  "key": "bushfire",
+  "order": 9,
+  "name": "Bushfire Festival",
+  "edition": "",
+  "menu_label": "Bushfire Festival",
+  "place": "ESWATINI",
+  "subtitle": "ESWATINI · MAIN ARENA",
+  "type": "road",
+  "family": false,
+  "nights": "3 nights · 4 days",
+  "price": "R8,500",
+  "prices": [],
+  "deposit": "R2,500",
+  "reference": "Bushfire",
+  "blurb": "Three days of music in Eswatini. Transport, camping, breakfast and your 3-day main arena ticket are covered. You just show up.",
+  "departures": [
+    {
+      "dates": "28–31 May 2027",
+      "yamo": "https://app.yamo.travel/t/758b3121-cfee-4e6b-ab5c-943c5af3e022?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Transport from Johannesburg to Eswatini",
+    "3 nights camping accommodation",
+    "Daily breakfast",
+    "One group dinner",
+    "Bushfire 3-day main arena ticket"
+  ],
+  "optional": [],
+  "cover": "/photos/trips/bushfire/1 cover.webp",
+  "gallery": [
+    "/photos/trips/bushfire/2.webp",
+    "/photos/trips/bushfire/3.webp",
+    "/photos/trips/bushfire/4.webp"
+  ]
+}

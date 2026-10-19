@@ -1,0 +1,43 @@
+{
+  "key": "zanzibar",
+  "order": 4,
+  "name": "Zanzibar",
+  "edition": "",
+  "menu_label": "Zanzibar",
+  "place": "TANZANIA",
+  "subtitle": "NUNGWI · STONE TOWN",
+  "type": "fly",
+  "family": false,
+  "nights": "5 nights · 6 days",
+  "price": "R26,500",
+  "prices": [],
+  "deposit": "R3,500",
+  "reference": "Zanzibar",
+  "blurb": "Turquoise water and spice-island history. Beach days in Nungwi, swimming with turtles and a sunset dhow cruise, then the old streets of Stone Town.",
+  "departures": [
+    {
+      "dates": "19–25 Sep 2027",
+      "yamo": "https://app.yamo.travel/t/6e675335-9377-44c0-943c-141e295b617c?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Flights from Johannesburg to Zanzibar",
+    "Accommodation with daily breakfast",
+    "3 nights in Nungwi, 2 nights in Stone Town",
+    "Swim with the turtles",
+    "Sunset dhow cruise",
+    "Stone Town historic landmarks",
+    "Island hopping — Prison Island & Nakupenda"
+  ],
+  "optional": [
+    "Jet ski / jet car",
+    "Clear kayak",
+    "Mnemba snorkelling & swimming with dolphins"
+  ],
+  "cover": "/photos/trips/zanzibar/1 cover.webp",
+  "gallery": [
+    "/photos/trips/zanzibar/2.webp",
+    "/photos/trips/zanzibar/3.webp",
+    "/photos/trips/zanzibar/4.webp"
+  ]
+}

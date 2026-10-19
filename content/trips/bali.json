@@ -1,0 +1,48 @@
+{
+  "key": "bali",
+  "order": 1,
+  "name": "Bali",
+  "edition": "",
+  "menu_label": "Bali",
+  "place": "INDONESIA",
+  "subtitle": "UBUD · CANGGU · ULUWATU",
+  "type": "fly",
+  "family": false,
+  "nights": "5 nights · 7 days",
+  "price": "R29,500",
+  "prices": [],
+  "deposit": "R3,500",
+  "reference": "Bali",
+  "blurb": "Rice terraces, temples and island days. Three nights in Ubud, two in Canggu, with the Bali Swing, Uluwatu Temple and a Nusa Penida day tour built in.",
+  "departures": [
+    {
+      "dates": "21–28 Mar 2027",
+      "yamo": "https://app.yamo.travel/t/aef4851c-d901-4e8a-b645-a1d6febe786d?ref=fuyamo-site"
+    },
+    {
+      "dates": "7–14 Nov 2027",
+      "yamo": "https://app.yamo.travel/t/fe3ab2ff-19a1-4b78-ada9-f0456a631aed?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Return flights, Johannesburg to Bali",
+    "Accommodation with daily breakfast",
+    "Transfers and ground transport",
+    "3 nights in Ubud, 2 nights in Canggu",
+    "Bali Swing",
+    "Ubud cultural tour",
+    "Uluwatu Temple",
+    "Waterfall experience",
+    "Nusa Penida day tour",
+    "Cretya Ubud day pass"
+  ],
+  "optional": [
+    "Other activities available"
+  ],
+  "cover": "/photos/trips/bali/1 cover.webp",
+  "gallery": [
+    "/photos/trips/bali/2.webp",
+    "/photos/trips/bali/3.webp",
+    "/photos/trips/bali/4.webp"
+  ]
+}

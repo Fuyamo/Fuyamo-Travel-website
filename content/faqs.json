@@ -1,0 +1,36 @@
+{
+  "faqs": [
+    {
+      "question": "Is the deposit refundable?",
+      "answer": "No. Deposits are non-refundable, because they secure flights, accommodation and activity bookings on your behalf."
+    },
+    {
+      "question": "When do I pay the balance?",
+      "answer": "You pay the balance in instalments after your deposit. It must be settled in full 30 days before departure."
+    },
+    {
+      "question": "Are prices per person?",
+      "answer": "Yes. Prices are per person sharing. The Family Edition Snowcation has separate prices for parents and kids."
+    },
+    {
+      "question": "Can I travel on my own?",
+      "answer": "Absolutely. Our group trips are a great way to travel solo. WhatsApp us and we'll talk you through room sharing options."
+    },
+    {
+      "question": "What is included in the price?",
+      "answer": "Everything listed under 'What's included' on each trip: transport, accommodation with breakfast and the listed activities. Optional extras are at your own cost."
+    },
+    {
+      "question": "Is there a birthday discount?",
+      "answer": "Yes. Travel in your birthday month and get R500 off your trip."
+    },
+    {
+      "question": "Do I need a passport or visa?",
+      "answer": "You'll need a valid passport for international trips. Visa and passport assistance is one of our services, so ask us what your destination requires."
+    },
+    {
+      "question": "How do I know my spot is confirmed?",
+      "answer": "Once we receive your proof of payment, we'll confirm your spot on WhatsApp or by email."
+    }
+  ]
+}

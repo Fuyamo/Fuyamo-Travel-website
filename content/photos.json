@@ -1,0 +1,110 @@
+{
+  "headers": {
+    "home": "/photos/headers/home.jpg",
+    "trips": "/photos/headers/trips.webp",
+    "calendar": "/photos/headers/calendar.webp",
+    "services": "/photos/headers/services.webp",
+    "about": "/photos/headers/about.webp",
+    "how_to_book": "/photos/headers/how-to-book.webp",
+    "corporate": "/photos/headers/corporate.webp",
+    "contact": "/photos/headers/contact.webp",
+    "travel_talk": "/photos/headers/travel-talk.webp",
+    "yamo": "/photos/headers/yamo.webp"
+  },
+  "intro": [
+    "/photos/intro/1.webp",
+    "/photos/intro/2.webp",
+    "/photos/intro/3.webp"
+  ],
+  "why": [
+    "/photos/why/1 Everything sorted.webp",
+    "/photos/why/2 Meet your people.webp",
+    "/photos/why/3 No payment panic.webp",
+    "/photos/why/4 Travel with confidence.webp",
+    "/photos/why/5 Birthday month perk.webp"
+  ],
+  "moments": [
+    {
+      "image": "/photos/moments/01 Zanzibar.webp",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/02 Bushfire.webp",
+      "caption": "Bushfire",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/03 Lesotho.webp",
+      "caption": "Lesotho",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/04 Bilene.webp",
+      "caption": "Bilene",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/05 Bali.webp",
+      "caption": "Bali",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/06 Victoria Falls.webp",
+      "caption": "Victoria Falls",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/07 Afriski [lesothofam].webp",
+      "caption": "Afriski",
+      "trip": "lesothofam"
+    },
+    {
+      "image": "/photos/moments/08 Zanzibar.webp",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/09 Mozambique.webp",
+      "caption": "Mozambique",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/10 Abu Dhabi [thailand].webp",
+      "caption": "Abu Dhabi",
+      "trip": "thailand"
+    },
+    {
+      "image": "/photos/moments/11 Lesotho.webp",
+      "caption": "Lesotho",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/12 Walvis Bay.webp",
+      "caption": "Walvis Bay",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/13 Snow day [lesothofam].webp",
+      "caption": "Snow day",
+      "trip": "lesothofam"
+    },
+    {
+      "image": "/photos/moments/14 Eswatini.webp",
+      "caption": "Eswatini",
+      "trip": ""
+    }
+  ],
+  "about": [
+    "/photos/about/1.webp",
+    "/photos/about/2.webp"
+  ],
+  "services": [
+    "/photos/services/1 Group travel.webp",
+    "/photos/services/2 Tailored travel.webp",
+    "/photos/services/3 Public sector and corporate.webp"
+  ],
+  "how_to_book": "/photos/how-to-book/1.webp",
+  "birthday_popup": "/photos/birthday-popup/1.webp",
+  "yamo_passport": "/photos/yamo-passport/1.webp"
+}

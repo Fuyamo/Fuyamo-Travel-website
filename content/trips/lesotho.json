@@ -1,0 +1,51 @@
+{
+  "key": "lesotho",
+  "order": 6,
+  "name": "Lesotho Snowcation",
+  "edition": "",
+  "menu_label": "Lesotho Snowcation",
+  "place": "LESOTHO",
+  "subtitle": "VIA CLARENS · AFRISKI",
+  "type": "road",
+  "family": false,
+  "nights": "2 nights · 3 days",
+  "price": "R7,200",
+  "prices": [],
+  "deposit": "R2,500",
+  "reference": "Lesotho",
+  "blurb": "A winter weekend in the snow. Adventure activities in Clarens, then a full day on the slopes at Afriski Mountain Resort.",
+  "departures": [
+    {
+      "dates": "16–18 Jul 2027",
+      "yamo": "https://app.yamo.travel/t/1c67081d-fd47-40a9-bab9-b8030ebac29a?ref=fuyamo-site"
+    },
+    {
+      "dates": "6–8 Aug 2027",
+      "yamo": "https://app.yamo.travel/t/9b38b95c-138f-4e55-b3e0-55d97694eb55?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Road transport",
+    "Accommodation with daily breakfast",
+    "Daily transport to activities",
+    "Clarens Xtreme adventure experience",
+    "Afriski Mountain Resort full-day pass",
+    "Basotho cultural village tour"
+  ],
+  "optional": [
+    "Skiing",
+    "Bum boarding",
+    "Tubing",
+    "Zipline",
+    "Quad biking",
+    "Paintball",
+    "Archery",
+    "Wall climbing"
+  ],
+  "cover": "/photos/trips/lesotho/1 cover.webp",
+  "gallery": [
+    "/photos/trips/lesotho/2.webp",
+    "/photos/trips/lesotho/3.webp",
+    "/photos/trips/lesotho/4.webp"
+  ]
+}

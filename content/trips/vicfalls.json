@@ -1,0 +1,44 @@
+{
+  "key": "vicfalls",
+  "order": 3,
+  "name": "3 Countries",
+  "edition": "",
+  "menu_label": "3 Countries · Vic Falls",
+  "place": "ZIMBABWE · ZAMBIA · BOTSWANA",
+  "subtitle": "VICTORIA FALLS · LIVINGSTONE · CHOBE",
+  "type": "fly",
+  "family": false,
+  "nights": "5 nights · 6 days",
+  "price": "R19,500",
+  "prices": [],
+  "deposit": "R3,000",
+  "reference": "ZZB",
+  "blurb": "Victoria Falls, Livingstone and Chobe in one trip. See the falls from the Zimbabwe side, cross into Zambia, then spend a day on safari in Botswana.",
+  "departures": [
+    {
+      "dates": "10–15 Oct 2027",
+      "yamo": "https://app.yamo.travel/t/87bcaabf-b179-441d-a75e-3d9eb589f6b7?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Flights from Johannesburg and ground transport",
+    "Accommodation with daily breakfast",
+    "Day visit to Victoria Falls",
+    "Day trip to Livingstone, Zambia",
+    "Day trip to Chobe, Botswana"
+  ],
+  "optional": [
+    "Devil's Pool",
+    "Helicopter ride",
+    "Sunset cruise",
+    "Walking with lions",
+    "Chobe game drive",
+    "Zipline & bungee"
+  ],
+  "cover": "/photos/trips/vicfalls/1 cover.webp",
+  "gallery": [
+    "/photos/trips/vicfalls/2.webp",
+    "/photos/trips/vicfalls/3.webp",
+    "/photos/trips/vicfalls/4.webp"
+  ]
+}

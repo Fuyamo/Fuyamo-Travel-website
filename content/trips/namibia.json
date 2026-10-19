@@ -1,0 +1,41 @@
+{
+  "key": "namibia",
+  "order": 5,
+  "name": "Namibia",
+  "edition": "",
+  "menu_label": "Namibia",
+  "place": "NAMIBIA",
+  "subtitle": "WINDHOEK · SWAKOPMUND · WALVIS BAY",
+  "type": "fly",
+  "family": false,
+  "nights": "5 nights · 6 days",
+  "price": "R18,000",
+  "prices": [],
+  "deposit": "R3,000",
+  "reference": "Namibia",
+  "blurb": "Where the desert meets the Atlantic. Quad bikes on Dune 7, camel rides, pink flamingos and the Cape Cross seal colony, all on one coast.",
+  "departures": [
+    {
+      "dates": "7–12 May 2027",
+      "yamo": "https://app.yamo.travel/t/464a858c-b317-4ba6-a4be-f1aba9cb3374?ref=fuyamo-site"
+    }
+  ],
+  "included": [
+    "Flights and all transfers",
+    "Accommodation with daily breakfast",
+    "Daily transport to activities",
+    "Dune 7 and quad biking",
+    "Cape Cross seal reserve",
+    "Pink flamingo lake",
+    "Camel riding",
+    "Windhoek city tour",
+    "Swakopmund and Walvis Bay"
+  ],
+  "optional": [],
+  "cover": "/photos/trips/namibia/1 cover.webp",
+  "gallery": [
+    "/photos/trips/namibia/2.webp",
+    "/photos/trips/namibia/3.webp",
+    "/photos/trips/namibia/4.webp"
+  ]
+}
