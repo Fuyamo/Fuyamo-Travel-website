@@ -1,3 +1,5 @@
+/** @OnlyCurrentDoc  (the script may only open the spreadsheet it's attached to) */
+
 // Fuyamo website enquiries.
 //
 // This runs in Google Apps Script, attached to the "Fuyamo website enquiries" Google Sheet in info@fuyamo.co.za's
