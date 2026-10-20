@@ -1296,7 +1296,7 @@
   const waNumber = (phone) => String(phone || '').replace(/[^\d]/g, '');
   const firstName = (name) => String(name || '').trim().split(/\s+/)[0];
   // The sheet's Plunk column ("proposal_sent ✓", or "… ✗ reason") in words.
-  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal emailed', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
+  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal passed on for emailing', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
   function plunkNote(p) {
     const m = String(p || '').match(/^(\w+) (✓|✗)\s*(.*)$/);
     if (!m) return '';
@@ -1449,7 +1449,7 @@
             else if (wa) window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(proposalText()), '_blank', 'noopener');
           }
           update({ status: 'Proposal sent', proposal: draft.proposal, trip: draft.trip, resend: !!again }, el,
-            (r) => (auto ? (/✓/.test(r.plunk || '') ? 'Proposal sent. Plunk emailed ' + e.email + '.' : 'Saved, but Plunk didn’t send it.' + plunkNote(r.plunk)) : 'Marked as proposal sent.'));
+            (r) => (auto ? (/✓/.test(r.plunk || '') ? 'Proposal sent. Plunk is emailing it to ' + e.email + '.' : 'Saved, but Plunk didn’t send it.' + plunkNote(r.plunk)) : 'Marked as proposal sent.'));
         },
       },
     };
