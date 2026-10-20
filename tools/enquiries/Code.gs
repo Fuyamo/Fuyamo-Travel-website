@@ -26,8 +26,8 @@ const PLUNK_API = 'https://next-api.useplunk.com';
 const YAMO_API = 'https://api.yamo.travel/agency-api/v1';
 
 const SHEET = 'Enquiries';
-const COLUMNS = ['id', 'received', 'form', 'status', 'name', 'email', 'phone', 'subject', 'details', 'news', 'proposal', 'trip', 'notes', 'updated', 'updated_by', 'plunk', 'yamo'];
-const HEADINGS = ['ID', 'Received', 'Form', 'Status', 'Name', 'Email', 'Phone', 'Subject', 'Details', 'Trip news', 'Proposal link', 'Trip', 'Notes', 'Updated', 'Updated by', 'Plunk', 'Yamo enquiry'];
+const COLUMNS = ['id', 'received', 'form', 'status', 'name', 'email', 'phone', 'subject', 'details', 'news', 'proposal', 'trip', 'notes', 'updated', 'updated_by', 'plunk', 'yamo', 'yamo_status'];
+const HEADINGS = ['ID', 'Received', 'Form', 'Status', 'Name', 'Email', 'Phone', 'Subject', 'Details', 'Trip news', 'Proposal link', 'Trip', 'Notes', 'Updated', 'Updated by', 'Plunk', 'Yamo enquiry', 'Yamo status'];
 const STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
 const FORMS = { corporate: 'Corporate enquiry', callback: 'Callback request', birthday: 'Birthday offer' };
 // Plunk events sent when the status changes in the dashboard. Corporate enquiries get a PDF quote rather than a Yamo
@@ -120,7 +120,7 @@ function receive(body) {
     row = {
       id: 'E' + Date.now().toString(36).toUpperCase() + ('0' + Math.floor(Math.random() * 1296).toString(36).toUpperCase()).slice(-2),
       received: new Date().toISOString(), form, status: 'New', name, email, phone, subject,
-      details: JSON.stringify(details), news: news ? 'Yes' : '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: '', yamo: '',
+      details: JSON.stringify(details), news: news ? 'Yes' : '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: '', yamo: '', yamo_status: '',
     };
     sheet.appendRow(COLUMNS.map((c) => safeCell(row[c])));
   } finally {
@@ -227,6 +227,7 @@ function admin(body) {
     const res = yamoCall('post', '/enquiries', payload);
     if (!res.ok) return res;
     setCell(row.id, 'yamo', res.enquiry.id);
+    setCell(row.id, 'yamo_status', res.enquiry.status || 'new');
     return { ok: true, yamo: res.enquiry };
   }
 
@@ -283,21 +284,30 @@ function writeRow(row) {
 // - Yamo emailed the proposal → "Proposal sent", and Plunk starts the reminders only (yamo_proposal_sent).
 // - They booked → "Booked"; they declined or it was closed → "Not going ahead" (either stops the reminders).
 // Returns the new status, or '' when nothing changed.
+// Yamo's own status is kept in the "Yamo status" column (new, building, sent, changes, accepted, declined, booked),
+// so the admin's list shows where each request is on Yamo.
 function applyYamo(row, y) {
-  if (!y || (row.status !== 'New' && row.status !== 'Proposal sent')) return '';
+  if (!y) return '';
+  const yamoStatus = y.bookingId ? 'booked' : String(y.status || '');
+  let dirty = yamoStatus !== row.yamo_status;
+  row.yamo_status = yamoStatus;
   let status = row.status, event = '';
-  if (y.bookingId) { status = 'Booked'; event = 'booked'; }
-  else if (y.status === 'declined' || y.closed) { status = 'Not going ahead'; event = 'not_going_ahead'; }
-  else if (row.status === 'New' && (y.proposal || ['sent', 'changes', 'accepted'].indexOf(y.status) >= 0)) { status = 'Proposal sent'; event = 'yamo_proposal_sent'; }
-  if (status === row.status) return '';
-  row.status = status;
-  const url = y.proposal && y.proposal.url ? String(y.proposal.url) : '';
-  if (url && !row.proposal) row.proposal = /^https:\/\//.test(url) ? url : 'https://' + url.replace(/^\/+|^http:\/\//, '');
-  row.updated = new Date().toISOString();
-  row.updated_by = 'Yamo';
-  writeRow(row);
-  tellPlunk(row, event);
-  return status;
+  if (row.status === 'New' || row.status === 'Proposal sent') {
+    if (y.bookingId) { status = 'Booked'; event = 'booked'; }
+    else if (y.status === 'declined' || y.closed) { status = 'Not going ahead'; event = 'not_going_ahead'; }
+    else if (row.status === 'New' && (y.proposal || ['sent', 'changes', 'accepted'].indexOf(y.status) >= 0)) { status = 'Proposal sent'; event = 'yamo_proposal_sent'; }
+  }
+  if (status !== row.status) {
+    row.status = status;
+    const url = y.proposal && y.proposal.url ? String(y.proposal.url) : '';
+    if (url && !row.proposal) row.proposal = /^https:\/\//.test(url) ? url : 'https://' + url.replace(/^\/+|^http:\/\//, '');
+    row.updated = new Date().toISOString();
+    row.updated_by = 'Yamo';
+    dirty = true;
+  }
+  if (dirty) writeRow(row);
+  if (event) tellPlunk(row, event);
+  return event ? status : '';
 }
 
 // Runs every hour (Apps Script → Triggers): checks each open enquiry that was sent to Yamo, so reminders stop as soon

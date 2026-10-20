@@ -1321,20 +1321,39 @@
   // ("Quote sent"); partnerships and opportunities (a corporate form type) aren't quoted at all.
   const isPartner = (e) => e.form === 'corporate' && !!e.info && e.info['Enquiry type'] === 'Partnerships';
   const formLabel = (e) => (isPartner(e) ? 'Partnership' : FORM_LABELS[e.form] || e.form);
+  // "Proposal with client" = the client has the proposal (emailed by Plunk or by Yamo).
   const statusName = (s, e) => (isPartner(e) ? { 'Proposal sent': 'In discussion', Booked: 'Agreed' }[s] || s
-    : e.form === 'corporate' && s === 'Proposal sent' ? 'Quote sent' : s);
-  const statusTag = (s, e) => `<span class="state state--${slugify(s)}">${h(statusName(s, e))}</span>`;
+    : s === 'Proposal sent' ? (e.form === 'corporate' ? 'Quote with client' : 'Proposal with client') : s);
+  // What the list and the enquiry's header show: the status, or for an enquiry with Yamo, where it is on Yamo.
+  const YAMO_STAGE = { new: 'Sent to Yamo', building: 'Being built on Yamo' };
+  function stage(e) {
+    if (e.status === 'New' && e.yamo) return { key: 'yamo', label: YAMO_STAGE[e.yamo_status] || 'Sent to Yamo' };
+    if (e.status === 'Proposal sent' && e.yamo && e.yamo_status === 'changes') return { key: 'changes', label: 'Changes requested' };
+    if (e.status === 'Proposal sent' && e.yamo && e.yamo_status === 'accepted') return { key: 'proposal-sent', label: 'Accepted on Yamo' };
+    return { key: slugify(e.status), label: statusName(e.status, e) };
+  }
+  const statusTag = (s, e) => { const g = stage(Object.assign({}, e, { status: s })); return `<span class="state state--${g.key}">${h(g.label)}</span>`; };
+  const ENQ_FILTERS = {
+    All: () => true,
+    New: (e) => e.status === 'New' && !e.yamo,
+    'At Yamo': (e) => e.status === 'New' && !!e.yamo,
+    'With client': (e) => e.status === 'Proposal sent',
+    Booked: (e) => e.status === 'Booked',
+  };
   const waNumber = (phone) => String(phone || '').replace(/[^\d]/g, '');
   const firstName = (name) => String(name || '').trim().split(/\s+/)[0];
   // Yamo's enquiry statuses (Agency API) in words.
-  const YAMO_STATUS = { new: 'received, not started yet', building: 'being built', sent: 'proposal sent', changes: 'they asked for changes', accepted: 'proposal accepted', declined: 'proposal declined' };
+  const YAMO_STATUS = {
+    new: 'Sent to Yamo, not started yet', building: 'Being built on Yamo', sent: 'Yamo has emailed the proposal to the client',
+    changes: 'The client asked for changes on Yamo', accepted: 'The client accepted the proposal on Yamo', declined: 'The client declined the proposal on Yamo',
+  };
   function yamoLine(y) {
     if (!y) return 'Sent to Yamo. Checking where it is…';
     if (y.error) return 'Sent to Yamo. ' + y.error;
-    let t = 'On Yamo: ' + (YAMO_STATUS[y.status] || y.status || 'sent');
-    if (y.bookingId) t += ', and they booked';
-    else if (y.closed) t += ' (closed)';
-    return t + '.';
+    let t = (YAMO_STATUS[y.status] || 'On Yamo: ' + (y.status || 'sent')) + '.';
+    if (y.bookingId) t += ' They booked.';
+    else if (y.closed && y.status !== 'declined') t += ' It’s closed on Yamo.';
+    return t;
   }
   // "R15 000 pp" → 15000
   const rands = (v) => { const n = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return n > 0 ? String(Math.round(n)) : ''; };
@@ -1347,15 +1366,29 @@
   }
 
   // Every call carries the Google sign-in; the script checks it's a fuyamo.co.za account.
+  // Google's script sometimes doesn't answer on the first try. Reads, and Send to Yamo (Yamo ignores a repeat), are
+  // retried. A save isn't, because it may have gone through and a second one could email the client twice: if its
+  // answer is lost, the enquiry is re-read to see whether the change landed.
+  const RETRY = ['list', 'yamo_status', 'yamo_ping', 'yamo_send'];
   async function enqApi(body) {
     if (MOCK) return mockEnquiries(body);
-    let data;
-    try {
-      const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ token: GA.token }, body)) });
-      data = await res.json();
-    } catch (err) {
-      throw new Error('Couldn’t reach the enquiries sheet. Check the internet connection and try again.');
+    const tries = RETRY.includes(body.action) ? 3 : 1;
+    let data = null;
+    for (let i = 0; i < tries && !data; i++) {
+      if (i) await new Promise((r) => setTimeout(r, 1200 * i));
+      try {
+        const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ token: GA.token }, body)) });
+        data = await res.json();
+      } catch (err) { data = null; }
     }
+    if (!data && body.action === 'update') {
+      try {
+        const row = (await enqApi({ action: 'list' })).enquiries.find((x) => x.id === body.id);
+        if (row && row.updated && Date.now() - new Date(row.updated) < 120000) return { ok: true, enquiry: row, plunk: row.plunk };
+      } catch (err) { /* fall through to the message below */ }
+      throw new Error('Couldn’t confirm that was saved. Refresh the page to check before trying again.');
+    }
+    if (!data) throw new Error('Couldn’t reach the enquiries sheet. Check the internet connection and try again.');
     if (data.auth) { GA.token = ''; keepGoogle(); }
     if (!data.ok) throw new Error(data.error || 'The enquiries sheet didn’t answer.');
     return data;
@@ -1397,10 +1430,11 @@
     if (!enqConfigured()) { page('Enquiries', enqNotReady()); return; }
     if (!gaConnected()) { page('Enquiries', `<section class="card">${googleCard('enquiries', 'Enquiries')}</section>`); return; }
     const list = await loadEnquiries();
-    const count = (s) => (s === 'All' ? list.length : list.filter((e) => e.status === s).length);
+    if (!ENQ_FILTERS[ENQ.filter]) ENQ.filter = 'All';
+    const count = (s) => list.filter(ENQ_FILTERS[s]).length;
     const draw = () => {
-      const shown = ENQ.filter === 'All' ? list : list.filter((e) => e.status === ENQ.filter);
-      const seg = `<div class="seg seg--scroll">${each(['All', 'New', 'Proposal sent', 'Booked'], (s) => `<button class="${s === ENQ.filter ? 'is-on' : ''}" data-act="filter" data-value="${h(s)}">${h(s === 'Proposal sent' ? 'Sent' : s)} <span class="seg__n">${count(s)}</span></button>`)}</div>`;
+      const shown = list.filter(ENQ_FILTERS[ENQ.filter]);
+      const seg = `<div class="seg seg--scroll">${each(Object.keys(ENQ_FILTERS), (s) => `<button class="${s === ENQ.filter ? 'is-on' : ''}" data-act="filter" data-value="${h(s)}">${h(s)} <span class="seg__n">${count(s)}</span></button>`)}</div>`;
       page('Enquiries', `${seg}
         <section class="card">${shown.length ? `<ul class="rows">${each(shown, enqRow)}</ul>`
           : `<p class="muted">${list.length ? 'Nothing here.' : 'No enquiries yet. New ones from the website’s forms appear here.'}</p>`}</section>
@@ -1466,7 +1500,7 @@
 
         ${partner ? '' : e.yamo ? `<section class="card">
           <h2 class="card__title">Proposal</h2>
-          <p class="card__hint card__hint--below">Yamo emails the proposal when you send it from Agency OS, so there’s nothing to send here. Within the hour this enquiry moves to Proposal sent, and ${auto ? 'Plunk follows up after 3 and 10 days unless they book.' : 'you follow up yourself (they left no email).'}</p>
+          <p class="card__hint card__hint--below">Yamo emails the proposal when you send it from Agency OS, so there’s nothing to send here. Within the hour this enquiry moves to Proposal with client, and ${auto ? 'Plunk follows up after 3 and 10 days unless they book.' : 'you follow up yourself (they left no email).'}</p>
           ${e.proposal ? `<a class="link" href="${h(e.proposal)}" target="_blank" rel="noopener">Open the proposal</a>` : ''}
         </section>` : `<section class="card">
           <h2 class="card__title">${K.title}</h2>
@@ -1484,7 +1518,7 @@
         <section class="card">
           <h2 class="card__title">Status</h2>
           <div class="seg seg--scroll">${each(ENQ_STATUSES, (s) => `<button class="${s === e.status ? 'is-on' : ''}" data-act="setStatus" data-value="${h(s)}">${h(statusName(s, e))}</button>`)}</div>
-          <p class="card__hint card__hint--below">${partner ? 'Reply to them yourself; nothing is emailed automatically for partnerships.' : auto ? 'Booked or Not going ahead stops Plunk’s reminders.' : 'Keeps track of where each enquiry is.'}${e.updated ? ` Last changed ${h(ago(e.updated))}${e.updated_by ? ' by ' + h(e.updated_by) : ''}.` : ''}${h(plunkNote(e.plunk))}</p>
+          <p class="card__hint card__hint--below">${partner ? 'Reply to them yourself; nothing is emailed automatically for partnerships.' : `${quote ? 'Quote' : 'Proposal'} with client means the client has it${quote || !e.yamo ? '' : ' (Yamo emailed it)'}. ${auto ? 'Booked or Not going ahead stops Plunk’s reminders.' : ''}`}${e.updated ? ` Last changed ${h(ago(e.updated))}${e.updated_by ? ' by ' + h(e.updated_by) : ''}.` : ''}${h(plunkNote(e.plunk))}</p>
           ${field('Notes for the team', `<textarea data-k="notes" rows="3" placeholder="Called them, sent a second option…">${h(draft.notes)}</textarea>`)}
           <button class="btn" data-act="notes">Save notes</button>
         </section>`, { back: '#/enquiries' });
@@ -1509,10 +1543,10 @@
       try { r = await enqApi({ action: 'yamo_status', id: e.id }); yamo = r.yamo; } catch (err) { yamo = { error: err.message }; }
       const line = $('#yamo-status');
       if (line) line.textContent = yamoLine(yamo);
-      if (r && r.changed && r.enquiry) {
+      if (r && r.enquiry && (r.changed || r.enquiry.yamo_status !== e.yamo_status)) {
         Object.assign(e, parseEnquiry(r.enquiry));
         draw();
-        toast({ Booked: 'Yamo shows they booked, so this is now marked as booked.', 'Proposal sent': 'Yamo shows the proposal was sent, so this is now marked as proposal sent.', 'Not going ahead': 'Yamo shows it was declined or closed, so this is now marked as not going ahead.' }[e.status] || 'Updated from Yamo.');
+        if (r.changed) toast({ Booked: 'Yamo shows they booked, so this is now marked as booked.', 'Proposal sent': 'Yamo has emailed the proposal, so this is now marked as proposal with client.', 'Not going ahead': 'Yamo shows it was declined or closed, so this is now marked as not going ahead.' }[e.status] || 'Updated from Yamo.');
       }
     };
     const sendToYamo = () => {
@@ -1544,6 +1578,7 @@
         try {
           const r = await enqApi({ action: 'yamo_send', id: e.id, fields: f });
           e.yamo = r.yamo.id;
+          e.yamo_status = r.yamo.status || 'new';
           yamo = r.yamo;
           d.close(true);
           draw();
@@ -1596,7 +1631,7 @@
     box.hidden = false;
     box.innerHTML = '<h2 class="card__title">New enquiries</h2>' + loading();
     try {
-      const fresh = (await loadEnquiries()).filter((e) => e.status === 'New');
+      const fresh = (await loadEnquiries()).filter(ENQ_FILTERS.New);
       box.innerHTML = `<div class="card__head"><h2 class="card__title">New enquiries${fresh.length ? ` <span class="count">${fresh.length}</span>` : ''}</h2><a href="#/enquiries" class="link">All enquiries →</a></div>
         ${fresh.length ? `<ul class="rows">${each(fresh.slice(0, 5), enqRow)}</ul>` : '<p class="muted">You’re all caught up.</p>'}`;
     } catch (err) { box.innerHTML = `<h2 class="card__title">New enquiries</h2><p class="muted">${h(err.message)}</p>`; }
@@ -1619,6 +1654,7 @@
       const r = mockList.find((x) => x.id === body.id);
       if (!(+body.fields.partySize >= 1 && +body.fields.partySize <= 20)) return Promise.reject(new Error('Yamo takes 1 to 20 travellers per enquiry.'));
       r.yamo = 'yq_mock_' + r.id;
+      r.yamo_status = 'new';
       return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: { id: r.yamo, status: 'new', closed: false, bookingId: '' } }), 400));
     }
     if (body.action === 'yamo_ping') return Promise.resolve({ ok: true, agency: 'Fuyamo Travel (test)' });
@@ -1626,6 +1662,7 @@
       const r = mockList.find((x) => x.id === body.id);
       const y = { id: r.yamo, status: 'sent', closed: false, bookingId: '', proposal: { url: 'https://app.yamo.travel/p/mock', sentAt: 'now' } };
       const changed = r.status === 'New';
+      r.yamo_status = 'sent';
       if (changed) { r.status = 'Proposal sent'; r.proposal = y.proposal.url; r.plunk = 'yamo_proposal_sent ✓'; }
       return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: y, enquiry: clone(r), changed }), 400));
     }
