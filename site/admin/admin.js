@@ -1123,17 +1123,26 @@
   const gaConfigured = () => !!(S.settings && S.settings.ga && S.settings.ga.property && S.settings.ga.client);
   const gaConnected = () => GA.token && Date.now() < GA.expires;
 
+  // One load per script: a second call waits for the same load (it may still be on its way).
+  const scripts = new Map();
   function loadScript(src) {
-    return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-      const s = document.createElement('script');
-      s.src = src; s.async = true; s.onload = resolve; s.onerror = () => reject(new Error('Couldn’t reach Google.'));
-      document.head.appendChild(s);
-    });
+    if (!scripts.has(src)) {
+      scripts.set(src, new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.async = true; s.onload = resolve;
+        s.onerror = () => { scripts.delete(src); s.remove(); reject(new Error('Couldn’t reach Google.')); };
+        document.head.appendChild(s);
+      }));
+    }
+    return scripts.get(src);
   }
+  // Google's sign-in code is loaded as soon as the admin opens, so a click on "Sign in with Google" opens Google's
+  // window straight away. (Loading it on the click took long enough for Chrome to block the window as a pop-up.)
+  const GSI = 'https://accounts.google.com/gsi/client';
+  const preloadGoogle = () => { if (!MOCK && gaConfigured()) loadScript(GSI).catch(() => {}); };
   async function gaConnect() {
     if (MOCK) { GA.token = 'mock'; GA.expires = Date.now() + 3600e3; return; }
-    await loadScript('https://accounts.google.com/gsi/client');
+    if (!(window.google && window.google.accounts && window.google.accounts.oauth2)) await loadScript(GSI);
     await new Promise((resolve, reject) => {
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: S.settings.ga.client,
@@ -1884,6 +1893,7 @@
     shell();
     refreshStatus();
     route();
+    ensure('settings').then(preloadGoogle).catch(() => {});
   }
 
   // ---------- Events ----------
