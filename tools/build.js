@@ -71,12 +71,17 @@ function inline(text) {
 
 // Blocks are separated by a blank line: ## headings, - lists, 1. lists, > quotes, ![images](…) and paragraphs.
 function markdown(source) {
+  const ids = new Set();
   return source.trim().split(/\n\s*\n/).map((block) => {
     const lines = block.split('\n').map((l) => l.trim());
     let m;
     if (lines.length === 1 && (m = lines[0].match(/^(#{1,4})\s+(.+)$/))) {
       const level = Math.max(2, m[1].length); // the post title is the page's only h1
-      return `<h${level}>${inline(m[2])}</h${level}>`;
+      // An id per heading lets search results and shared links jump straight to a section.
+      let id = slugify(m[2].replace(/[*_]|\[|\]\([^)]*\)/g, '')) || 'section';
+      while (ids.has(id)) id += '-2';
+      ids.add(id);
+      return `<h${level} id="${id}">${inline(m[2])}</h${level}>`;
     }
     if (lines.every((l) => /^[-*]\s+/.test(l))) return '<ul>' + lines.map((l) => '<li>' + inline(l.replace(/^[-*]\s+/, '')) + '</li>').join('') + '</ul>';
     if (lines.every((l) => /^\d+[.)]\s+/.test(l))) return '<ol>' + lines.map((l) => '<li>' + inline(l.replace(/^\d+[.)]\s+/, '')) + '</li>').join('') + '</ol>';
@@ -125,6 +130,10 @@ function readPosts(root, photo, notes) {
     });
     meta.date = String(meta.date).slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(meta.date)) throw new Error(`posts/${file}: write the date as YYYY-MM-DD, e.g. 2026-10-13`);
+    // "updated:" (optional) is the day the article was last reworked; it only counts when it's after the date.
+    meta.updated = String(meta.updated || '').slice(0, 10);
+    if (meta.updated && !/^\d{4}-\d{2}-\d{2}$/.test(meta.updated)) throw new Error(`posts/${file}: write updated as YYYY-MM-DD, e.g. 2026-10-21`);
+    if (meta.updated <= meta.date) meta.updated = '';
     const where = 'Travel Talk → ' + meta.title;
     // Photos chosen in the admin live in photos/ and are published like the rest; older articles name a file in
     // site/assets/photos/.
@@ -138,7 +147,7 @@ function readPosts(root, photo, notes) {
     const body = m[2].replace(/\]\((\/?photos\/[^)\s]+)\)/g, (all, src) => '](/' + photo(decodeURIComponent(src), 'posts', where) + ')');
     const words = body.split(/\s+/).filter(Boolean).length;
     return {
-      slug: file.replace(/\.md$/, ''), title: meta.title, cat: meta.category, date: meta.date,
+      slug: file.replace(/\.md$/, ''), title: meta.title, cat: meta.category, date: meta.date, updated: meta.updated,
       read: meta.read || Math.max(1, Math.round(words / 200)) + ' min', img, intro: meta.intro, html: markdown(body),
     };
   });
@@ -293,7 +302,7 @@ function structuredData(p, R, siteUrl) {
     const post = R.findPost(p.param);
     graph.push({
       '@type': 'BlogPosting', headline: post.title, description: post.intro, image: abs(post.img), articleSection: post.cat,
-      datePublished: post.date, dateModified: post.date, author: ref, publisher: ref, mainEntityOfPage: abs(p.path), inLanguage: 'en-ZA',
+      datePublished: post.date, dateModified: post.updated || post.date, author: ref, publisher: ref, mainEntityOfPage: abs(p.path), inLanguage: 'en-ZA',
     }, crumbs([['Home', ''], ['Travel Talk', C.PAGES.talk.path], [post.title, p.path]]));
   }
   // "<" is escaped so text can never close the script tag early.
@@ -411,7 +420,7 @@ function run(argv) {
     description: `${t.blurb} ${t.nights}, from ${t.price} per person.`,
   }));
   posts.forEach((p) => pages.push({
-    page: 'post', param: p.slug, path: C.PATHS.post(p.slug), share: 'post-' + p.slug, type: 'article', lastmod: p.date,
+    page: 'post', param: p.slug, path: C.PATHS.post(p.slug), share: 'post-' + p.slug, type: 'article', lastmod: p.updated || p.date,
     image: p.img, title: p.title + ' · Fuyamo Travel', description: p.intro,
   }));
 

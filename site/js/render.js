@@ -948,7 +948,7 @@ window.FUYAMO_RENDER = (function (C) {
     return `
       <section class="article-head">
         <a href="${link('talk')}" class="article-back">← Travel Talk</a>
-        <div class="article-meta"><span>${esc(p.cat)}</span><span><time datetime="${p.date}">${formatDate(p.date)}</time> · ${esc(p.read)} READ</span></div>
+        <div class="article-meta"><span>${esc(p.cat)}</span><span>${p.updated ? `UPDATED <time datetime="${p.updated}">${formatDate(p.updated)}</time>` : `<time datetime="${p.date}">${formatDate(p.date)}</time>`} · ${esc(p.read)} READ</span></div>
         <h1>${esc(p.title)}</h1>
         <p>${esc(p.intro)}</p>
       </section>

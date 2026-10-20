@@ -363,10 +363,10 @@
   function parsePost(slug, text) {
     const m = text.replace(/\r\n?/g, '\n').match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
     const meta = m ? frontMatter(m[1]) : {};
-    return { slug, title: meta.title || slug, category: meta.category || CATEGORIES[0], date: String(meta.date || today()).slice(0, 10), image: meta.image || '', intro: meta.intro || '', body: (m ? m[2] : text).trim() };
+    return { slug, title: meta.title || slug, category: meta.category || CATEGORIES[0], date: String(meta.date || today()).slice(0, 10), updated: String(meta.updated || '').slice(0, 10), image: meta.image || '', intro: meta.intro || '', body: (m ? m[2] : text).trim() };
   }
   const q = (s) => JSON.stringify(String(s || ''));
-  const postText = (p) => `---\ntitle: ${q(p.title)}\ncategory: ${q(p.category)}\ndate: ${p.date}\nimage: ${q(p.image)}\nintro: ${q(p.intro)}\n---\n\n${p.body.trim()}\n`;
+  const postText = (p) => `---\ntitle: ${q(p.title)}\ncategory: ${q(p.category)}\ndate: ${p.date}\n${p.updated > p.date ? `updated: ${p.updated}\n` : ''}image: ${q(p.image)}\nintro: ${q(p.intro)}\n---\n\n${p.body.trim()}\n`;
 
   async function loadPosts() {
     const files = (await gh(`/repos/${REPO}/contents/posts?ref=${BRANCH}`)).filter((f) => /^[^_.].*\.md$/.test(f.name));
@@ -946,6 +946,8 @@
           if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) errors.push('Choose a date.');
           if (!original && S.posts.some((p) => p.slug === d.slug)) errors.push('Another article already uses that web address.');
           if (errors.length) { toast(errors[0], 'error'); return; }
+          // Reworking an article's words shows it as updated today (Google reads this as fresh content).
+          if (original && ['title', 'intro', 'body'].some((k) => d[k] !== original[k])) d.updated = today();
           const content = postText(d);
           if (await save([{ path: `posts/${d.slug}.md`, text: content }].concat(pendingFiles(content)), `Travel Talk: ${original ? 'update' : 'add'} “${d.title}”`, btn)) {
             S.posts = S.posts.filter((p) => p !== original).concat(clone(d)).sort((x, y) => (x.date < y.date ? 1 : -1));

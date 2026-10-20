@@ -50,6 +50,8 @@ The old WordPress site was backed up (`backup-10.19.2026_14-58-08_fuyamamk.tar.g
 
 Articles are Markdown files in `posts/`. `tools/post-template.md` shows the format. The file name becomes the web address: `visa-tips.md` is published at `fuyamo.co.za/travel-talk/visa-tips/`.
 
+`updated:` is optional: the day an article was last reworked. The article then shows "Updated" with that date, and Google gets it as the modified date (structured data and sitemap). The admin sets it when you change an article's title, intro or text. Every `##` and `###` heading gets an anchor, so `travel-talk/passport-checklist/#how-much-does-a-passport-cost` links straight to that section.
+
 ## Other edits
 
 - **Trip details PDFs:** each trip page has a "Trip details" download. The PDF is `site/assets/trips/fuyamo-<year>-<key>.pdf`, for example `fuyamo-2027-bali.pdf`. The year comes from the trip's first date, and the key is the trip's web address. To update one, replace the file with the same name. The build lists any trip whose PDF is missing.
