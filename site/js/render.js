@@ -649,7 +649,7 @@ window.FUYAMO_RENDER = (function (C) {
             <div class="fact fact--deposit"><span>Deposit to reserve</span><strong>${esc(t.deposit)} pp</strong></div>
             <div class="booking__ctas">
               <a href="${esc(yamoLink(t, 0))}" ${EXT} class="btn-amber" data-reserve data-seat="card">${seatLabel()} →</a>
-              <a href="${esc(wa('Hi Fuyamo, I have a question about the ' + t.fullName + ' trip.'))}" ${EXT + CALLBACK} class="booking__wa">${icon(SHARE_ICONS.whatsapp, 17, 1.6)}WhatsApp us</a>
+              <a href="${esc(wa('Hi Fuyamo, I have a question about the ' + t.fullName + ' trip.'))}" ${EXT} data-wa="trip" class="booking__wa">${icon(SHARE_ICONS.whatsapp, 17, 1.6)}WhatsApp us</a>
             </div>
             <span class="booking__note">Deposit non-refundable. Balance in instalments, due 30 days before departure.</span>
           </div>
