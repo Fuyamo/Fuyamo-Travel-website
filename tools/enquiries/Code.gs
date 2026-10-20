@@ -181,8 +181,9 @@ function admin(body) {
     // Moving to Proposal sent, Booked or Not going ahead tells Plunk, so its workflows email the customer.
     let plunk = '';
     if (changed && STATUS_EVENTS[row.status] && row.email && plunkKey()) {
+      // proposal_status stays on the contact, so Plunk's follow-up workflow can check it before each reminder.
       plunk = plunkTrack(row.email, STATUS_EVENTS[row.status], {
-        name: row.name, first_name: row.name.split(' ')[0], proposal_link: row.proposal, trip: row.trip,
+        name: row.name, first_name: row.name.split(' ')[0], proposal_link: row.proposal, trip: row.trip, proposal_status: row.status,
       }, undefined, row.id + ':' + STATUS_EVENTS[row.status] + ':' + row.updated);
       setCell(row.id, 'plunk', plunk);
       row.plunk = plunk;

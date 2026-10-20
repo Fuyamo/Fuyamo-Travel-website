@@ -81,9 +81,11 @@ The script tells [Plunk](https://useplunk.com) about each enquiry that has an em
 | Event | When | Data for the email (`{{ name }}` etc.) |
 |---|---|---|
 | `enquiry_received` | A form with an email address arrives (at most once per address every 6 hours) | `name`, `first_name`, `enquiry_type`, `enquiry_about` |
-| `proposal_sent` | **Send proposal** in the admin | `name`, `first_name`, `trip`, `proposal_link` |
+| `proposal_sent` | **Send proposal** in the admin | `name`, `first_name`, `trip`, `proposal_link`, `proposal_status` |
 | `booked` | Status set to Booked | same |
 | `not_going_ahead` | Status set to Not going ahead | same |
+
+Workflows in Plunk: **Enquiry reply** (`enquiry_received` → the Enquiry received email) and **Proposal follow-up** (`proposal_sent` → Your proposal, then after 3 days and again after 7 more, a reminder only while the contact's `proposal_status` is still "Proposal sent"; Booked or Not going ahead in the admin stops them).
 
 Use **Transactional** templates for replies and proposals (they reach everyone who enquired) and **Marketing** templates only for trip news (they skip people who didn't tick the box or who unsubscribed). The sheet's Plunk column shows what was sent, or why it failed.
 
