@@ -245,7 +245,8 @@ function admin(body) {
   if (body.action === 'yamo_ping') {
     if (!yamoKey()) return { ok: false, error: 'Yamo isn’t connected yet. Add YAMO_API_KEY under Project Settings → Script properties.' };
     const res = yamoCall('get', '/ping');
-    return res.ok ? { ok: true, agency: String(res.raw.name || res.raw.slug || 'your agency') } : res;
+    const a = res.ok ? res.raw.agency || res.raw.data || res.raw : {};
+    return res.ok ? { ok: true, agency: String(a.name || a.slug || res.raw.name || res.raw.slug || 'your agency') } : res;
   }
 
   return { ok: false, error: 'Unknown request.' };
