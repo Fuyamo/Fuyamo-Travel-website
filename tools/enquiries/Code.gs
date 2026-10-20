@@ -10,8 +10,9 @@
 // To change it: edit this file in the project, paste it over Code.gs in the Apps Script editor, then
 // Deploy → Manage deployments → edit (pencil) → Version: New version → Deploy. The web address stays the same.
 //
-// Plunk is connected by adding the script property PLUNK_SECRET_KEY (Project Settings → Script properties).
-// The key never appears in this file or on the website.
+// Plunk is connected by adding the script property PLUNK_PUBLIC_KEY (Project Settings → Script properties): Plunk's
+// public key (pk_…), the only key its event endpoint accepts. It stays here, not on the website, so nobody else can
+// fire Fuyamo's events.
 
 const NOTIFY = 'info@fuyamo.co.za';
 const DOMAIN = 'fuyamo.co.za';
@@ -214,7 +215,7 @@ function signedIn(token) {
 // ---------- Plunk ----------
 
 function plunkKey() {
-  return PropertiesService.getScriptProperties().getProperty('PLUNK_SECRET_KEY') || '';
+  return PropertiesService.getScriptProperties().getProperty('PLUNK_PUBLIC_KEY') || '';
 }
 
 // Tracks an event for a contact. Returns a short note for the sheet: "enquiry_received ✓" or what went wrong.
@@ -244,7 +245,7 @@ function plunkTrack(email, event, data, subscribed, idempotency) {
 // Run this once from the editor (Run → setup): it creates the Enquiries tab and asks for the permissions the script needs.
 function setup() {
   enquirySheet();
-  console.log('Ready. Plunk is ' + (plunkKey() ? 'connected.' : 'not connected yet (add PLUNK_SECRET_KEY under Project Settings → Script properties).'));
+  console.log('Ready. Plunk is ' + (plunkKey() ? 'connected.' : 'not connected yet (add PLUNK_PUBLIC_KEY under Project Settings → Script properties).'));
 }
 
 function enquirySheet() {
