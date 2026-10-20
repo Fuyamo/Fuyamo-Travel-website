@@ -1390,10 +1390,13 @@
     let data = null;
     for (let i = 0; i < tries && !data; i++) {
       if (i) await new Promise((r) => setTimeout(r, 1200 * i));
+      // A retried call that hangs (Google sometimes takes 30 seconds or more) is cut off after 15 and tried again.
+      const stop = tries > 1 ? new AbortController() : null;
+      const timer = stop ? setTimeout(() => stop.abort(), 15000) : 0;
       try {
-        const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ token: GA.token }, body)) });
+        const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ token: GA.token }, body)), signal: stop ? stop.signal : undefined });
         data = await res.json();
-      } catch (err) { data = null; }
+      } catch (err) { data = null; } finally { clearTimeout(timer); }
     }
     if (!data && body.action === 'update') {
       try {
