@@ -1015,11 +1015,14 @@ html[data-ab="1"] .ab-1 { display: inline; }
 
 /* ---------- Birthday offer popup (a native <dialog>: Escape and the backdrop close it) ---------- */
 
-.promo-pop { width: min(720px, calc(100vw - 32px)); max-height: calc(100svh - 32px); padding: 0; border: 0; border-radius: 24px; overflow: hidden; background: #fff; color: var(--ink); box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
-.promo-pop[open] { display: grid; grid-template-columns: 280px minmax(0, 1fr); animation: callback-in .22s ease; }
+.promo-pop { width: min(720px, calc(100vw - 32px)); max-height: calc(var(--vvh, 100svh) - 32px); padding: 0; border: 0; border-radius: 24px; overflow: hidden; background: #fff; color: var(--ink); box-shadow: 0 30px 80px rgba(0, 0, 0, .35); }
+/* Closed means hidden, whatever the browser (older ones don't know <dialog> and would show it in the page). */
+.promo-pop:not([open]) { display: none !important; }
+/* Photo and form side by side; when space runs short the form scrolls inside the popup instead of being cut off. */
+.promo-pop[open] { display: flex; animation: callback-in .22s ease; }
 .promo-pop::backdrop { background: rgba(10, 10, 10, .55); }
-.promo-pop__media { position: relative; overflow: hidden; background: #222; }
-.promo-pop__body { position: relative; padding: 26px; overflow-y: auto; }
+.promo-pop__media { position: relative; flex: 0 0 280px; overflow: hidden; background: #222; }
+.promo-pop__body { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; padding: 26px; overflow-y: auto; }
 .promo-pop__form, .promo-pop__done { display: flex; flex-direction: column; gap: 10px; outline: none; }
 .promo-pop__title { margin: 2px 0 6px; padding-right: 34px; font: 600 24px/1.1 var(--sans); letter-spacing: -.035em; }
 .promo-pop__sub { margin: 0 0 6px; font: 400 14.5px/1.45 var(--sans); color: #5A564E; }
@@ -1033,7 +1036,11 @@ html[data-ab="1"] .ab-1 { display: inline; }
 /* Phones: a taller photo, with smaller text and fields underneath. */
 @media (max-width: 639.98px) {
   .promo-pop { margin-bottom: 10px; border-radius: 22px; }
-  .promo-pop[open] { grid-template-columns: minmax(0, 1fr); grid-template-rows: 160px auto; }
+  .promo-pop[open] { flex-direction: column; }
+  .promo-pop__media { flex: 0 0 160px; }
+  /* Keyboard open or a short screen: no photo, the popup sits at the top of what's visible. */
+  .promo-pop.is-tight { margin: var(--vvt, 8px) auto auto; max-height: calc(var(--vvh, 100svh) - 16px); }
+  .promo-pop.is-tight .promo-pop__media { display: none; }
   .promo-pop__body { padding: 16px; }
   .promo-pop__form, .promo-pop__done { gap: 8px; }
   .promo-pop__title { font-size: 21px; padding-right: 30px; }

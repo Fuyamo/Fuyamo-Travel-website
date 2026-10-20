@@ -36,9 +36,10 @@ window.FUYAMO_RENDER = (function (C) {
   const CALLBACK = ' data-callback aria-haspopup="dialog" aria-controls="callback"';
 
   // The corporate page leads with email (businesses send enquiries and approvals by email); every other page leads with WhatsApp.
+  // fab: the floating button, which opens the WhatsApp chat itself (the other WhatsApp buttons open the card).
   const primaryContact = (page) => page === 'corporate'
-    ? { href: 'mailto:' + SITE.email + '?subject=' + encodeURIComponent('Corporate travel enquiry'), attrs: '', short: 'Email us', label: 'Email Fuyamo', email: true }
-    : { href: WA.general, attrs: EXT + CALLBACK, short: 'WhatsApp us', label: 'WhatsApp Fuyamo', email: false };
+    ? { href: 'mailto:' + SITE.email + '?subject=' + encodeURIComponent('Corporate travel enquiry'), attrs: '', fab: '', short: 'Email us', label: 'Email Fuyamo', email: true }
+    : { href: WA.general, attrs: EXT + CALLBACK, fab: EXT + ' data-wa="floating"', short: 'WhatsApp us', label: 'WhatsApp Fuyamo', email: false };
 
   const pin = (size) => '<span class="pin' + (size ? ' pin--' + size : '') + '"></span>';
   // hero: the page's main photo, fetched first; everything else loads lazily.
@@ -1092,7 +1093,7 @@ window.FUYAMO_RENDER = (function (C) {
       </section>
       <section class="wrap contact-details">
         <div class="contact-details__box">
-          <div><span>WHATSAPP</span><a href="${WA.general}" ${EXT + CALLBACK}>${esc(SITE.whatsappDisplay)}</a></div>
+          <div><span>WHATSAPP</span><a href="${WA.general}" ${EXT} data-wa="contact-number">${esc(SITE.whatsappDisplay)}</a></div>
           <div><span>CALL</span><a href="tel:${SITE.phone}">${esc(SITE.phoneDisplay)}</a></div>
           <div><span>EMAIL</span><a href="mailto:${SITE.email}">${esc(SITE.email)}</a></div>
           ${A ? `<div><span>OFFICE</span><a href="${esc(A.map)}" ${EXT}><address>${esc(A.street)}<br>${esc(A.area)}, ${esc(A.city)} ${esc(A.postcode)}</address></a></div>` : ''}

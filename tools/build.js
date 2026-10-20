@@ -364,7 +364,7 @@ ${siteUrl && indexable ? `<script type="application/ld+json">${structuredData(p,
 <header class="nav${solidNav ? ' is-solid' : ''}" id="nav">${R.nav(p.page)}</header>
 <main id="app">${R.page(p.page, p.param, today)}</main>
 <footer class="site-footer" id="footer">${R.footer(today.getFullYear())}</footer>
-<a class="fab" id="fab" href="${contact.href}" ${contact.attrs} aria-label="${contact.label}" aria-hidden="true" tabindex="-1">${contact.email ? MAIL_ICON : WHATSAPP_ICON}</a>
+<a class="fab" id="fab" href="${contact.href}" ${contact.fab} aria-label="${contact.label}" aria-hidden="true" tabindex="-1">${contact.email ? MAIL_ICON : WHATSAPP_ICON}</a>
 ${R.callbackPanel()}
 ${R.birthdayPopup()}
 </body>

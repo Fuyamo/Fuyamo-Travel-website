@@ -1304,17 +1304,20 @@
     const filter = { filter: { fieldName: 'eventName', stringFilter: { value: 'generate_lead' } } };
     const sum = (rows) => rows.reduce((t, x) => t + x.m[0], 0);
     try {
-      const [byPage, byChannel] = await Promise.all([
+      const waFilter = { filter: { fieldName: 'eventName', stringFilter: { value: 'click_whatsapp' } } };
+      const [byPage, byChannel, wa] = await Promise.all([
         gaReport({ dateRanges: [r], dimensions: [{ name: 'pagePath' }], metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 8 }),
         gaReport({ dateRanges: [r], dimensions: [{ name: 'sessionDefaultChannelGroup' }], metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 6 }),
+        gaReport({ dateRanges: [r], metrics: [{ name: 'eventCount' }], dimensionFilter: waFilter }).catch(() => []),
       ]);
-      const total = sum(byPage);
+      const total = sum(byPage), waTaps = sum(wa);
+      const waLine = waTaps ? ` Plus ${fmtNum(waTaps)} ${waTaps === 1 ? 'tap' : 'taps'} on WhatsApp buttons that open the chat directly (those chats happen in WhatsApp).` : '';
       box.innerHTML = `<h2 class="card__title">Enquiries from the website</h2>
-        ${total ? `<p class="card__hint">${fmtNum(total)} ${total === 1 ? 'enquiry' : 'enquiries'}${visitors ? `, from ${(total / visitors * 100).toFixed(1)}% of visitors` : ''}. Counted since 20 Oct 2026.</p>
+        ${total ? `<p class="card__hint">${fmtNum(total)} ${total === 1 ? 'enquiry' : 'enquiries'}${visitors ? `, from ${(total / visitors * 100).toFixed(1)}% of visitors` : ''}. Counted since 20 Oct 2026.${waLine}</p>
         <div class="grid-2">
           <div><h3 class="sub">From these pages</h3>${bars(byPage.map((x) => ({ label: pageName(x.d[0]), v: x.m[0] })), byPage[0] ? byPage[0].m[0] : 0)}</div>
           <div><h3 class="sub">Where those visitors came from</h3>${bars(byChannel.map((x) => ({ label: channelNames[x.d[0]] || x.d[0], v: x.m[0] })), sum(byChannel))}</div>
-        </div>` : '<p class="muted">No enquiries in this period yet. Every form sent from the website is counted from 20 Oct 2026.</p>'}`;
+        </div>` : `<p class="muted">No enquiries in this period yet. Every form sent from the website is counted from 20 Oct 2026.${waLine}</p>`}`;
     } catch (err) {
       box.innerHTML = `<h2 class="card__title">Enquiries from the website</h2><p class="muted">${h(err.message)}</p>`;
     }

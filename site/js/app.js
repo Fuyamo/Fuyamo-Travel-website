@@ -407,13 +407,37 @@
     closeCallback(false);
     if (state.menu) { state.menu = false; updateNav(); }
     dlg.showModal();
+    fitPromo();
+  }
+
+  // Phones: keep the popup inside the part of the screen that's visible (the keyboard takes the rest), and drop
+  // the photo when space is short, so the form is never pushed out of sight.
+  function fitPromo() {
+    const dlg = cbEl('promo-pop');
+    if (!dlg || !dlg.open) return;
+    const vv = window.visualViewport;
+    const height = vv ? vv.height : window.innerHeight;
+    const tight = window.innerWidth < 640 && height < 560;
+    dlg.style.setProperty('--vvh', Math.round(height) + 'px');
+    dlg.style.setProperty('--vvt', Math.round((vv ? vv.offsetTop : 0) + 8) + 'px');
+    dlg.classList.toggle('is-tight', tight);
   }
 
   function setupPromo() {
     const dlg = cbEl('promo-pop');
     if (!dlg || typeof dlg.showModal !== 'function') return;
     dlg.addEventListener('close', () => { if (!promoState().claimed) promoState({ until: Date.now() + 14 * 864e5 }); });
-    dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); }); // the dimmed backdrop
+    // Only a tap on the dimmed backdrop (outside the popup's box) closes it, not a tap on a gap inside it.
+    dlg.addEventListener('click', (e) => {
+      if (e.target !== dlg) return;
+      const r = dlg.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+    });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitPromo);
+      window.visualViewport.addEventListener('scroll', fitPromo);
+    }
+    window.addEventListener('resize', fitPromo);
     cbEl('promo-form').addEventListener('submit', sendPromo);
     cbEl('promo-form').elements.whatsapp.addEventListener('input', (e) => {
       e.target.setCustomValidity(!e.target.value || normaliseNumber(e.target.value) ? '' : 'Enter a WhatsApp number, e.g. 072 123 4567');
@@ -698,6 +722,8 @@
 
   document.addEventListener('click', (e) => {
     // WhatsApp buttons open the "leave your number" card (a second click closes it).
+    const waLink = e.target.closest('a[data-wa]');
+    if (waLink) track('click_whatsapp', { place: waLink.dataset.wa });
     const trigger = e.target.closest('[data-callback]');
     if (trigger) {
       e.preventDefault();
