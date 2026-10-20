@@ -219,7 +219,7 @@
       setTimeout(refreshStatus, 8000);
       return true;
     } catch (err) {
-      toast(err.status === 401 ? 'Your GitHub access has expired. Replace it in Settings.' : "Couldn't save: " + err.message, 'error');
+      toast(err.status === 401 ? 'Your GitHub access has expired. Replace it in Settings.' : err.status === 403 ? CANT_SAVE : "Couldn't save: " + err.message, 'error');
       return false;
     } finally {
       if (button) { button.disabled = false; button.textContent = label; }
@@ -296,17 +296,24 @@
   }
   const codeProblem = (code) => (code.length < 10 ? 'Make the code at least 10 characters. Three or four random words work well.' : '');
 
-  // Checks a GitHub token can save to the repository. Returns the account, or throws with a readable reason.
-  async function checkToken(token) {
+  const CANT_SAVE = 'This token can’t save to the website yet. Either the Fuyamo organisation still has to approve it '
+    + '(on GitHub: Fuyamo → Settings → Personal access tokens → Pending requests → Approve), or it’s missing '
+    + '“Contents: Read and write” on Fuyamo-Travel-website.';
+
+  // Checks a GitHub token works. With canSave, also proves it may save to the repository by storing a tiny unused
+  // file object (invisible, never part of the site). Returns the account, or throws with a readable reason.
+  async function checkToken(token, canSave) {
     S.token = token;
     try {
       const repo = await gh(`/repos/${REPO}`);
-      if (!repo.permissions || !repo.permissions.push) throw new GHError(403, 'This token can’t save to the website. Give it “Contents: Read and write” on Fuyamo-Travel-website.');
+      if (!repo.permissions || !repo.permissions.push) throw new GHError(403, CANT_SAVE);
+      if (canSave && !MOCK) await gh(`/repos/${REPO}/git/blobs`, { method: 'POST', body: { content: 'fuyamo-admin check', encoding: 'utf-8' } });
       return await gh('/user').catch(() => ({ login: 'fuyamo' }));
     } catch (err) {
       S.token = '';
       if (err.status === 401) throw new GHError(401, 'GitHub didn’t accept this token. It may be mistyped or expired.');
       if (err.status === 404) throw new GHError(404, 'This token can’t see Fuyamo-Travel-website. Check its owner is Fuyamo and the repository is selected.');
+      if (err.status === 403) throw new GHError(403, CANT_SAVE);
       throw err;
     }
   }
@@ -1335,7 +1342,7 @@
     } else if (form.dataset.form === 'token') {
       try { await unlockToken(await readJson(KEY_PATH), f.code); } catch (err) { toast('The sign-in code isn’t right.', 'error'); return; }
       const old = S.token;
-      try { await checkToken(f.token.trim()); } catch (err) { S.token = old; toast(err.message, 'error'); return; }
+      try { await checkToken(f.token.trim(), true); } catch (err) { S.token = old; toast(err.message, 'error'); return; }
       if (await save([{ path: KEY_PATH, text: json(await lockToken(S.token, f.code)) }], 'Admin: replace GitHub access', btn)) { remember(S.token, kept()); form.reset(); }
     } else if (form.dataset.form === 'ga') {
       const ga = { property: f.property.trim().replace(/^properties\//, ''), client: f.client.trim() };
@@ -1395,7 +1402,7 @@
       if (codeProblem(f.code)) { toast(codeProblem(f.code), 'error'); return; }
       busy(true, 'Setting up…');
       try {
-        S.user = await checkToken(f.token.trim());
+        S.user = await checkToken(f.token.trim(), true);
         await commit([{ path: KEY_PATH, text: json(await lockToken(S.token, f.code)) }], 'Admin: set up the sign-in code');
       } catch (err) { busy(false, 'Set up'); S.token = ''; toast(err.message, 'error'); return; }
       remember(S.token, true);
