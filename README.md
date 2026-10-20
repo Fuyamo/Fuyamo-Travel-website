@@ -90,6 +90,17 @@ Workflows in Plunk: **Enquiry reply** (`enquiry_received` → the Enquiry receiv
 
 Partnerships: the corporate form's **Partnerships** type (hotels, venues, suppliers, brands and other opportunities) hides the trip fields. In the admin these have no Quote card and their statuses read New, In discussion, Agreed, Not going ahead. They get the thank-you email, and nothing else is emailed automatically.
 
+### Yamo (Send to Yamo)
+
+Each enquiry (not partnerships) has a **Yamo** card in the admin. **Send to Yamo** opens a short form (where to, travellers 1–20, dates, budget, what they want), prefilled from the enquiry, and sends it to Yamo's Agency API. It then appears in Agency OS under **Tailored → Requests**, where you build the trip and send the proposal. The card shows where it is on Yamo (being built, proposal sent, accepted…), and when Yamo shows a booking the enquiry is marked **Booked** automatically, which also stops Plunk's reminders. Sending twice can't create a duplicate (the enquiry's ID is sent as Yamo's `externalRef`).
+
+- **Key:** create an API key in Agency OS → Settings → Integrations and add it to the Google script as the script property `YAMO_API_KEY` (Apps Script → Project Settings → Script properties). It's secret and is only used by the script, never on the website. Yamo's tailored requests need the Growth plan or higher.
+- **Webhooks** aren't used: Yamo signs them with headers that Google Apps Script can't read, so the admin asks Yamo for the status instead.
+
+### Measuring enquiries
+
+Every form sent from the website is also a `generate_lead` event in Google Analytics (with `form`: corporate, callback or birthday), counted from 20 Oct 2026. The admin's Analytics page shows how many, as a share of visitors, by page and by channel. In Google Analytics you can mark `generate_lead` as a key event (Admin → Events).
+
 Corporate quotes: make the PDF, put it in Google Drive (Share → General access: Anyone with the link → Viewer), and paste that link into the enquiry's Quote card.
 
 Use **Transactional** templates for replies and proposals (they reach everyone who enquired) and **Marketing** templates only for trip news (they skip people who didn't tick the box or who unsubscribed). The sheet's Plunk column shows what was sent, or why it failed.

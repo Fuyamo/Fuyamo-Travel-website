@@ -158,6 +158,8 @@
     label.textContent = 'Sending…';
     try {
       await sendToInbox(Object.assign(R.quoteSubmission(state.quote), { _honey: form.elements._honey.value, _news: form.elements._news.checked }));
+      // Every enquiry is a lead in Google Analytics (with the page it came from), so the funnel can be measured.
+      track('generate_lead', { form: 'corporate', enquiry_type: C.CORP_TABS[state.quote.tab].label });
       showQuoteSent();
     } catch (err) {
       error.hidden = false;
@@ -309,6 +311,7 @@
     if (byEmail) { data.email = form.elements.email.value.trim(); data._news = form.elements._news.checked; }
     else { data['WhatsApp'] = prettyNumber(number); data['Start the chat'] = 'https://wa.me/' + number.slice(1); }
     if (form.elements.message.value.trim()) data['Message'] = form.elements.message.value.trim();
+    if (cb.plan) data['Destination'] = cb.plan.charAt(0).toUpperCase() + cb.plan.slice(1);
     if (cb.context) data['About'] = cb.context;
     data['Asked from'] = document.title + ' · ' + window.location.href.split(/[?#]/)[0];
     data._honey = form.elements._honey.value;
@@ -317,6 +320,7 @@
     btn.textContent = 'Sending…';
     try {
       await sendToInbox(data);
+      track('generate_lead', { form: 'callback', reply_by: byEmail ? 'email' : 'whatsapp' });
       form.hidden = true;
       cbEl('callback-done-title').textContent = 'Thanks, ' + name.split(' ')[0] + '.';
       cbEl('callback-done-text').textContent = byEmail ? "We'll email you at " + data.email + '.' : "We'll WhatsApp you at " + data['WhatsApp'] + '.';
@@ -463,6 +467,7 @@
         _honey: form.elements._honey.value,
       });
       promoState({ claimed: true });
+      track('generate_lead', { form: 'birthday' });
       form.hidden = true;
       cbEl('promo-done-title').textContent = "You're in, " + name.split(' ')[0] + '.';
       cbEl('promo-done-text').textContent = trips.length

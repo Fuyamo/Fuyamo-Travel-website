@@ -1275,20 +1275,45 @@
           <div class="ab">${each(seat, (x) => `<div class="ab__col${leader === x ? ' is-lead' : ''}"><span>${h(x.label)}</span><strong>${x.rate.toFixed(1)}%</strong><small>${fmtNum(x.clicks)} clicks from ${fmtNum(x.seen)} views</small></div>`)}</div>
           <p class="card__hint">${!seat[0].seen && !seat[1].seen ? 'No trip page views in this period yet.' : enough && leader ? `“${h(leader.label)}” gets more clicks. You can keep it and end the test.` : `Wait for about 100 clicks on each before deciding${leader ? `: “${h(leader.label)}” is ahead so far.` : '.'}`}</p>
         </section>
+        <section class="card" id="leads-card"><h2 class="card__title">Enquiries from the website</h2>${loading()}</section>
         <div class="grid-2">
           <section class="card"><h2 class="card__title">Most viewed pages</h2>${bars(pages.map((x) => ({ label: pageName(x.d[0]), v: x.m[0] })), pages[0] ? pages[0].m[0] : 0)}</section>
           <section class="card"><h2 class="card__title">How people found you</h2>${bars(channels.map((x) => ({ label: channelNames[x.d[0]] || x.d[0], v: x.m[0] })), sum(channels))}</section>
           <section class="card"><h2 class="card__title">Devices</h2>${bars(devices.map((x) => ({ label: x.d[0] ? x.d[0][0].toUpperCase() + x.d[0].slice(1) : 'Other', v: x.m[0] })), sum(devices))}</section>
           <section class="card"><h2 class="card__title">Countries</h2>${bars(countries.map((x) => ({ label: x.d[0], v: x.m[0] })), sum(countries))}</section>
         </div>`, { actions: ranges });
+      leadsCard(r, cur.m[0], channelNames);
     } catch (err) {
       page('Analytics', problem(err), { actions: ranges });
     }
   }
 
+  // Website enquiries (the generate_lead event, sent by every form since 20 Oct 2026): how many, and from where.
+  async function leadsCard(r, visitors, channelNames) {
+    const box = $('#leads-card');
+    if (!box) return;
+    const filter = { filter: { fieldName: 'eventName', stringFilter: { value: 'generate_lead' } } };
+    const sum = (rows) => rows.reduce((t, x) => t + x.m[0], 0);
+    try {
+      const [byPage, byChannel] = await Promise.all([
+        gaReport({ dateRanges: [r], dimensions: [{ name: 'pagePath' }], metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 8 }),
+        gaReport({ dateRanges: [r], dimensions: [{ name: 'sessionDefaultChannelGroup' }], metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 6 }),
+      ]);
+      const total = sum(byPage);
+      box.innerHTML = `<h2 class="card__title">Enquiries from the website</h2>
+        ${total ? `<p class="card__hint">${fmtNum(total)} ${total === 1 ? 'enquiry' : 'enquiries'}${visitors ? `, from ${(total / visitors * 100).toFixed(1)}% of visitors` : ''}. Counted since 20 Oct 2026.</p>
+        <div class="grid-2">
+          <div><h3 class="sub">From these pages</h3>${bars(byPage.map((x) => ({ label: pageName(x.d[0]), v: x.m[0] })), byPage[0] ? byPage[0].m[0] : 0)}</div>
+          <div><h3 class="sub">Where those visitors came from</h3>${bars(byChannel.map((x) => ({ label: channelNames[x.d[0]] || x.d[0], v: x.m[0] })), sum(byChannel))}</div>
+        </div>` : '<p class="muted">No enquiries in this period yet. Every form sent from the website is counted from 20 Oct 2026.</p>'}`;
+    } catch (err) {
+      box.innerHTML = `<h2 class="card__title">Enquiries from the website</h2><p class="muted">${h(err.message)}</p>`;
+    }
+  }
+
   // ---------- Enquiries (the website's forms, kept in a Google Sheet by tools/enquiries/Code.gs) ----------
 
-  const ENQ = { list: null, plunk: false, filter: 'All' };
+  const ENQ = { list: null, plunk: false, yamo: false, filter: 'All' };
   const ENQ_STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
   const FORM_LABELS = { corporate: 'Corporate', callback: 'Callback', birthday: 'Birthday offer' };
   const enqConfigured = () => !!(S.settings && S.settings.enquiries && S.settings.enquiries.url && S.settings.ga && S.settings.ga.client);
@@ -1301,6 +1326,18 @@
   const statusTag = (s, e) => `<span class="state state--${slugify(s)}">${h(statusName(s, e))}</span>`;
   const waNumber = (phone) => String(phone || '').replace(/[^\d]/g, '');
   const firstName = (name) => String(name || '').trim().split(/\s+/)[0];
+  // Yamo's enquiry statuses (Agency API) in words.
+  const YAMO_STATUS = { new: 'received, not started yet', building: 'being built', sent: 'proposal sent', changes: 'they asked for changes', accepted: 'proposal accepted', declined: 'proposal declined' };
+  function yamoLine(y) {
+    if (!y) return 'Sent to Yamo. Checking where it is…';
+    if (y.error) return 'Sent to Yamo. ' + y.error;
+    let t = 'On Yamo: ' + (YAMO_STATUS[y.status] || y.status || 'sent');
+    if (y.bookingId) t += ', and they booked';
+    else if (y.closed) t += ' (closed)';
+    return t + '.';
+  }
+  // "R15 000 pp" → 15000
+  const rands = (v) => { const n = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return n > 0 ? String(Math.round(n)) : ''; };
   // The sheet's Plunk column ("proposal_sent ✓", or "… ✗ reason") in words.
   const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal passed on for emailing', quote_sent: 'quote passed on for emailing', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
   function plunkNote(p) {
@@ -1332,6 +1369,7 @@
     const data = await enqApi({ action: 'list' });
     ENQ.list = data.enquiries.map(parseEnquiry);
     ENQ.plunk = !!data.plunk;
+    ENQ.yamo = !!data.yamo;
     return ENQ.list;
   }
   // One line about what they asked for.
@@ -1382,6 +1420,7 @@
     const e = ENQ.list.find((x) => x.id === id);
     if (!e) { page('Enquiry', '<section class="card"><p class="muted">That enquiry wasn’t found.</p></section>', { back: '#/enquiries' }); return; }
     const draft = { proposal: e.proposal, trip: e.trip || e.info['Destination'] || '', notes: e.notes };
+    let yamo = null; // where the enquiry is on Yamo, once fetched
     const wa = waNumber(e.phone);
     // Group trips get a Yamo proposal; corporate enquiries get a PDF quote (a link to it, e.g. from Google Drive).
     const quote = e.form === 'corporate', partner = isPartner(e);
@@ -1418,6 +1457,13 @@
         </section>
 
         ${partner ? '' : `<section class="card">
+          <div class="card__head"><h2 class="card__title">Yamo</h2>${e.yamo ? '<button class="link" data-act="yamoRefresh">Refresh</button>' : ''}</div>
+          ${e.yamo ? `<p class="card__hint card__hint--below" id="yamo-status">${h(yamoLine(yamo))}</p>`
+    : `<p class="card__hint">Send this enquiry to Yamo’s Agency OS (Tailored → Requests) to build the trip and send the proposal there.${ENQ.yamo ? '' : ' Yamo isn’t connected yet: add YAMO_API_KEY to the Google script (see the README).'}</p>
+          <button class="btn" data-act="yamoSend" ${ENQ.yamo ? '' : 'disabled'}>${icon('external', 16)} Send to Yamo</button>`}
+        </section>`}
+
+        ${partner ? '' : `<section class="card">
           <h2 class="card__title">${K.title}</h2>
           <p class="card__hint">${K.intro} ${auto ? K.follow : e.email ? 'Plunk isn’t connected yet, so this opens an email for you to send.' : 'They left a number only, so this opens WhatsApp with the link.'}</p>
           <div class="grid-2">
@@ -1452,10 +1498,65 @@
         button.disabled = false; button.textContent = label;
       }
     };
+    const checkYamo = async () => {
+      if (!e.yamo || partner) return;
+      try { yamo = (await enqApi({ action: 'yamo_status', id: e.id })).yamo; } catch (err) { yamo = { error: err.message }; }
+      const line = $('#yamo-status');
+      if (line) line.textContent = yamoLine(yamo);
+      if (yamo && yamo.bookingId && (e.status === 'New' || e.status === 'Proposal sent')) {
+        try {
+          const r = await enqApi({ action: 'update', id: e.id, status: 'Booked' });
+          Object.assign(e, parseEnquiry(r.enquiry));
+          draw();
+          toast('Yamo shows they booked, so this is now marked as booked.');
+        } catch (err) { /* stays as it is; they can mark it by hand */ }
+      }
+    };
+    const sendToYamo = () => {
+      const info = e.info;
+      const size = parseInt(info['Team size'] || info['Number of travellers'] || info['Number of delegates'] || '', 10);
+      const skip = ['Destination', 'Preferred dates', 'Budget per person', 'Team size', 'Number of travellers', 'Number of delegates', 'Start the chat', 'Reply by', 'Asked from'];
+      const brief = Object.entries(info).filter(([k]) => !skip.includes(k)).map(([k, v]) => k + ': ' + v).join('\n');
+      const dates = info['Preferred dates'] || (info['Birthday month'] ? 'Birthday month: ' + info['Birthday month'] : '');
+      const d = dialog(`<h2 class="dialog__title">Send to Yamo</h2>
+        <p class="dialog__text">Yamo gets ${h(firstName(e.name))}’s name, ${e.email && e.phone ? 'email and number' : e.email ? 'email' : 'number'}, and what you fill in here.</p>
+        <form data-yamo>
+          <div class="grid-2">
+            ${field('Where to', `<input name="destination" value="${h(info['Destination'] || e.trip || '')}" required>`)}
+            ${field('Travellers', `<input name="partySize" type="number" min="1" max="20" value="${size >= 1 && size <= 20 ? size : ''}" required>`, 'Yamo takes 1 to 20.')}
+            ${field('Dates', `<input name="dates" value="${h(dates)}" placeholder="Flexible">`)}
+            ${field('Budget per person (R)', `<input name="budget" type="number" min="0" step="100" value="${h(rands(info['Budget per person']))}">`)}
+          </div>
+          ${field('What they want', `<textarea name="brief" rows="4" maxlength="2000">${h(brief)}</textarea>`)}
+          <div class="dialog__actions"><button type="button" class="btn" data-x="no">Cancel</button><button type="submit" class="btn-primary">Send to Yamo</button></div>
+        </form>`, { wide: true });
+      d.el.querySelector('[data-x="no"]').addEventListener('click', () => d.close(null));
+      const form = d.el.querySelector('form');
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const f = Object.fromEntries(new FormData(form));
+        f.chips = String(info['Needs'] || '').split(',').map((x) => x.trim()).filter(Boolean);
+        const btn = form.querySelector('button[type=submit]');
+        btn.disabled = true; btn.textContent = 'Sending…';
+        try {
+          const r = await enqApi({ action: 'yamo_send', id: e.id, fields: f });
+          e.yamo = r.yamo.id;
+          yamo = r.yamo;
+          d.close(true);
+          draw();
+          toast('Sent to Yamo. Build the trip in Agency OS under Tailored → Requests.');
+        } catch (err) {
+          toast(err.message, 'error');
+          btn.disabled = false; btn.textContent = 'Send to Yamo';
+        }
+      });
+    };
     V = {
       redraw: draw,
       fields: draft,
       act: {
+        yamoSend: sendToYamo,
+        yamoRefresh() { yamo = null; const line = $('#yamo-status'); if (line) line.textContent = yamoLine(null); checkYamo(); },
         setStatus(el) {
           if (el.dataset.value === e.status) return;
           update({ status: el.dataset.value }, el, (r) => 'Marked as ' + statusName(el.dataset.value, e).toLowerCase() + '.' + (r.plunk && /✓/.test(r.plunk) && /Booked|Not going/.test(el.dataset.value) ? ' Plunk stops the reminders.' : ''));
@@ -1475,6 +1576,7 @@
       },
     };
     draw();
+    checkYamo();
   }
   // The enquiry's fields aren't part of a saved file, so they fill the view's own draft (no "Unsaved changes" bar).
   document.addEventListener('input', (ev) => {
@@ -1509,7 +1611,14 @@
         { id: 'EMOCK1', received: t(120), form: 'birthday', status: 'Booked', name: 'Lerato', email: '', phone: '+27 71 000 1111', subject: 'Birthday R500 offer: Lerato (March)', details: JSON.stringify({ 'Birthday month': 'March', 'Trips that month': 'Lesotho (6–8 Mar 2027)' }), news: '', proposal: 'https://app.yamo.travel/t/abc', trip: 'Lesotho', notes: '', updated: t(30), updated_by: 'info@fuyamo.co.za', plunk: '' },
       ];
     }
-    if (body.action === 'list') return Promise.resolve({ ok: true, enquiries: clone(mockList), plunk: !new URLSearchParams(location.search).has('noplunk') });
+    if (body.action === 'list') return Promise.resolve({ ok: true, enquiries: clone(mockList), plunk: !new URLSearchParams(location.search).has('noplunk'), yamo: true });
+    if (body.action === 'yamo_send') {
+      const r = mockList.find((x) => x.id === body.id);
+      if (!(+body.fields.partySize >= 1 && +body.fields.partySize <= 20)) return Promise.reject(new Error('Yamo takes 1 to 20 travellers per enquiry.'));
+      r.yamo = 'yq_mock_' + r.id;
+      return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: { id: r.yamo, status: 'new', closed: false, bookingId: '' } }), 400));
+    }
+    if (body.action === 'yamo_status') return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: { id: 'yq', status: 'sent', closed: false, bookingId: body.id === 'EMOCK3' ? 'bk_1' : '' } }), 400));
     const row = mockList.find((x) => x.id === body.id);
     const changed = body.status && body.status !== row.status;
     ['status', 'proposal', 'trip', 'notes'].forEach((k) => { if (body[k] !== undefined) row[k] = body[k]; });

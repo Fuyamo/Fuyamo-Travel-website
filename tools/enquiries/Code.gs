@@ -13,6 +13,9 @@
 // Plunk is connected by adding the script property PLUNK_PUBLIC_KEY (Project Settings → Script properties): Plunk's
 // public key (pk_…), the only key its event endpoint accepts. It stays here, not on the website, so nobody else can
 // fire Fuyamo's events.
+//
+// Yamo (the "Send to Yamo" button in the admin) uses the script property YAMO_API_KEY: an Agency OS API key
+// (yamo_sk_…, Agency OS → Settings → Integrations). It's secret, so it only ever lives here.
 
 const NOTIFY = 'info@fuyamo.co.za';
 const DOMAIN = 'fuyamo.co.za';
@@ -20,10 +23,11 @@ const SITE = 'https://fuyamo.co.za';
 // The admin's Google sign-in (the same OAuth client as its analytics).
 const CLIENT_ID = '27354709460-ah0aumamm32ficarg94evke0qd23qq23.apps.googleusercontent.com';
 const PLUNK_API = 'https://next-api.useplunk.com';
+const YAMO_API = 'https://api.yamo.travel/agency-api/v1';
 
 const SHEET = 'Enquiries';
-const COLUMNS = ['id', 'received', 'form', 'status', 'name', 'email', 'phone', 'subject', 'details', 'news', 'proposal', 'trip', 'notes', 'updated', 'updated_by', 'plunk'];
-const HEADINGS = ['ID', 'Received', 'Form', 'Status', 'Name', 'Email', 'Phone', 'Subject', 'Details', 'Trip news', 'Proposal link', 'Trip', 'Notes', 'Updated', 'Updated by', 'Plunk'];
+const COLUMNS = ['id', 'received', 'form', 'status', 'name', 'email', 'phone', 'subject', 'details', 'news', 'proposal', 'trip', 'notes', 'updated', 'updated_by', 'plunk', 'yamo'];
+const HEADINGS = ['ID', 'Received', 'Form', 'Status', 'Name', 'Email', 'Phone', 'Subject', 'Details', 'Trip news', 'Proposal link', 'Trip', 'Notes', 'Updated', 'Updated by', 'Plunk', 'Yamo enquiry'];
 const STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
 const FORMS = { corporate: 'Corporate enquiry', callback: 'Callback request', birthday: 'Birthday offer' };
 // Plunk events sent when the status changes in the dashboard. Corporate enquiries get a PDF quote rather than a Yamo
@@ -116,7 +120,7 @@ function receive(body) {
     row = {
       id: 'E' + Date.now().toString(36).toUpperCase() + ('0' + Math.floor(Math.random() * 1296).toString(36).toUpperCase()).slice(-2),
       received: new Date().toISOString(), form, status: 'New', name, email, phone, subject,
-      details: JSON.stringify(details), news: news ? 'Yes' : '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: '',
+      details: JSON.stringify(details), news: news ? 'Yes' : '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: '', yamo: '',
     };
     sheet.appendRow(COLUMNS.map((c) => safeCell(row[c])));
   } finally {
@@ -165,7 +169,7 @@ function admin(body) {
 
   if (body.action === 'list') {
     const list = rows(enquirySheet()).reverse();
-    return { ok: true, enquiries: list.slice(0, 1000), plunk: !!plunkKey() };
+    return { ok: true, enquiries: list.slice(0, 1000), plunk: !!plunkKey(), yamo: !!yamoKey() };
   }
 
   if (body.action === 'update') {
@@ -205,7 +209,82 @@ function admin(body) {
     return { ok: true, enquiry: row, plunk };
   }
 
+  // Send the enquiry to Yamo's Agency OS (Tailored → Requests), to build and send the proposal there.
+  if (body.action === 'yamo_send') {
+    if (!yamoKey()) return { ok: false, error: 'Yamo isn’t connected yet. Add YAMO_API_KEY under Project Settings → Script properties.' };
+    const row = rows(enquirySheet()).find((r) => r.id === body.id);
+    if (!row) return { ok: false, error: 'That enquiry wasn’t found.' };
+    const f = body.fields || {};
+    const party = Math.round(+f.partySize);
+    const payload = { fullName: row.name.slice(0, 120), destination: clean(f.destination, 200), partySize: party, externalRef: row.id };
+    if (payload.fullName.length < 2) return { ok: false, error: 'Yamo needs a name of at least 2 letters.' };
+    if (!payload.destination) return { ok: false, error: 'Add where they want to go.' };
+    if (!(party >= 1 && party <= 20)) return { ok: false, error: 'Yamo takes 1 to 20 travellers per enquiry.' };
+    if (row.email) payload.email = row.email;
+    const phone = intlPhone(row.phone);
+    if (phone) payload.phone = phone;
+    if (!payload.email && !payload.phone) return { ok: false, error: 'Yamo needs an email address or a phone number with its country code.' };
+    if (clean(f.dates)) payload.datesLabel = clean(f.dates, 120);
+    if (+f.budget > 0) payload.budgetCents = Math.round(+f.budget * 100);
+    const chips = (Array.isArray(f.chips) ? f.chips : []).map((c) => clean(c, 40)).filter(Boolean).slice(0, 12);
+    if (chips.length) payload.preferenceChips = chips;
+    if (clean(f.brief)) payload.brief = clean(f.brief, 2000);
+    const res = yamoCall('post', '/enquiries', payload);
+    if (!res.ok) return res;
+    setCell(row.id, 'yamo', res.enquiry.id);
+    return { ok: true, yamo: res.enquiry };
+  }
+
+  // Where the enquiry is on Yamo: being built, proposal sent, accepted, booked…
+  if (body.action === 'yamo_status') {
+    if (!yamoKey()) return { ok: false, error: 'Yamo isn’t connected yet.' };
+    const row = rows(enquirySheet()).find((r) => r.id === body.id);
+    if (!row || !row.yamo) return { ok: false, error: 'This enquiry hasn’t been sent to Yamo.' };
+    const res = yamoCall('get', '/enquiries/' + encodeURIComponent(row.yamo));
+    return res.ok ? { ok: true, yamo: res.enquiry } : res;
+  }
+
   return { ok: false, error: 'Unknown request.' };
+}
+
+// ---------- Yamo ----------
+
+function yamoKey() {
+  return PropertiesService.getScriptProperties().getProperty('YAMO_API_KEY') || '';
+}
+
+// Calls Yamo's Agency API. Returns { ok: true, enquiry } (only the parts the admin shows) or { ok: false, error }.
+function yamoCall(method, path, payload) {
+  const options = { method, headers: { Authorization: 'Bearer ' + yamoKey() }, muteHttpExceptions: true };
+  if (payload) { options.contentType = 'application/json'; options.payload = JSON.stringify(payload); }
+  let res;
+  try { res = UrlFetchApp.fetch(YAMO_API + path, options); } catch (err) { return { ok: false, error: 'Couldn’t reach Yamo. Try again in a minute.' }; }
+  const code = res.getResponseCode();
+  let data = {};
+  try { data = JSON.parse(res.getContentText()); } catch (err) { /* not JSON */ }
+  if (code >= 200 && code < 300) {
+    const e = data.enquiry || data;
+    return { ok: true, enquiry: {
+      id: e.id, status: e.status, closed: !!e.closed, proposal: e.proposal || null, tripId: e.tripId || '', bookingId: e.bookingId || '', updatedAt: e.updatedAt || '',
+    } };
+  }
+  const messages = {
+    401: 'Yamo didn’t accept the API key. It may be mistyped or revoked: check YAMO_API_KEY.',
+    403: 'Yamo refused: your plan may not include tailored trips (Growth plan and up), or the agency is suspended.',
+    404: 'Yamo doesn’t have this enquiry.',
+    429: 'Yamo is busy. Try again in a minute.',
+  };
+  return { ok: false, error: messages[code] || 'Yamo said: ' + String(data.message || 'error ' + code).slice(0, 200) };
+}
+
+// "072 123 4567", "+27 72 123 4567" or "0027…" become "+27721234567", so Yamo can use WhatsApp.
+function intlPhone(raw) {
+  let d = String(raw || '').replace(/[^\d+]/g, '');
+  if (d.startsWith('00')) d = '+' + d.slice(2);
+  if (d.startsWith('+')) return /^\+\d{8,15}$/.test(d) ? d : '';
+  if (d.startsWith('27') && d.length === 11) return '+' + d;
+  if (d.startsWith('0') && d.length === 10) return '+27' + d.slice(1);
+  return /^\d{9}$/.test(d) ? '+27' + d : '';
 }
 
 // The dashboard sends its Google access token. Google confirms who it belongs to; only fuyamo.co.za accounts,
@@ -271,6 +350,10 @@ function enquirySheet() {
     sheet.getRange(1, 1, 1, HEADINGS.length).setValues([HEADINGS]).setFontWeight('bold');
     sheet.setFrozenRows(1);
     // Plain text throughout, so dates, numbers and "+27…" stay exactly as sent.
+    sheet.getRange(1, 1, sheet.getMaxRows(), COLUMNS.length).setNumberFormat('@');
+  } else if (sheet.getRange(1, COLUMNS.length).getValue() !== HEADINGS[COLUMNS.length - 1]) {
+    // A column added since the sheet was made (e.g. "Yamo enquiry"): add its heading and plain-text format.
+    sheet.getRange(1, 1, 1, HEADINGS.length).setValues([HEADINGS]).setFontWeight('bold');
     sheet.getRange(1, 1, sheet.getMaxRows(), COLUMNS.length).setNumberFormat('@');
   }
   return sheet;

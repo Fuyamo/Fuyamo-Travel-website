@@ -259,7 +259,7 @@ window.FUYAMO = (function () {
       ]]],
       ['Who we share it with', [[
         'Travel suppliers such as airlines, hotels, transfer and activity companies and insurers, when your booking needs it.',
-        'Yamo, when you reserve or pay in the Yamo app. Yamo’s own privacy policy applies there.',
+        'Yamo, which we use to plan tailored trips and send proposals, and when you reserve or pay in the Yamo app. Yamo’s own privacy policy applies there.',
         'Google, which stores the messages from this website’s forms in our Google Workspace account and provides Google Analytics.',
         'Plunk, which sends our emails about your enquiry and, if you ask for them, trip news. Every trip news email has an unsubscribe link.',
       ],
