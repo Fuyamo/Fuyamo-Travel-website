@@ -1292,11 +1292,13 @@
   const ENQ_STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
   const FORM_LABELS = { corporate: 'Corporate', callback: 'Callback', birthday: 'Birthday offer' };
   const enqConfigured = () => !!(S.settings && S.settings.enquiries && S.settings.enquiries.url && S.settings.ga && S.settings.ga.client);
-  const statusTag = (s) => `<span class="state state--${slugify(s)}">${h(s)}</span>`;
+  // Corporate enquiries get a PDF quote, so their "Proposal sent" reads "Quote sent" (the sheet keeps one status list).
+  const statusName = (s, form) => (form === 'corporate' && s === 'Proposal sent' ? 'Quote sent' : s);
+  const statusTag = (s, form) => `<span class="state state--${slugify(s)}">${h(statusName(s, form))}</span>`;
   const waNumber = (phone) => String(phone || '').replace(/[^\d]/g, '');
   const firstName = (name) => String(name || '').trim().split(/\s+/)[0];
   // The sheet's Plunk column ("proposal_sent ✓", or "… ✗ reason") in words.
-  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal passed on for emailing', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
+  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal passed on for emailing', quote_sent: 'quote passed on for emailing', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
   function plunkNote(p) {
     const m = String(p || '').match(/^(\w+) (✓|✗)\s*(.*)$/);
     if (!m) return '';
@@ -1339,7 +1341,7 @@
     return `<li><a href="#/enquiries/${h(e.id)}" class="row">
       <span class="row__date"><strong>${when.getDate() || ''}</strong>${MONTHS[when.getMonth()] || ''}</span>
       <span class="row__text"><strong>${h(e.name)} <em class="tag tag--muted">${h(FORM_LABELS[e.form] || e.form)}</em></strong><small>${h(ago(e.received))} · ${h(enqAbout(e) || e.email || e.phone)}</small></span>
-      ${statusTag(e.status)}${icon('chevron', 18)}</a></li>`;
+      ${statusTag(e.status, e.form)}${icon('chevron', 18)}</a></li>`;
   };
   function googleCard(where, title) {
     return `<h2 class="card__title">${h(title)}</h2><p class="muted">Sign in with your fuyamo.co.za Google account (info@fuyamo.co.za).</p>
@@ -1356,7 +1358,7 @@
     const count = (s) => (s === 'All' ? list.length : list.filter((e) => e.status === s).length);
     const draw = () => {
       const shown = ENQ.filter === 'All' ? list : list.filter((e) => e.status === ENQ.filter);
-      const seg = `<div class="seg seg--scroll">${each(['All', 'New', 'Proposal sent', 'Booked'], (s) => `<button class="${s === ENQ.filter ? 'is-on' : ''}" data-act="filter" data-value="${h(s)}">${h(s)} <span class="seg__n">${count(s)}</span></button>`)}</div>`;
+      const seg = `<div class="seg seg--scroll">${each(['All', 'New', 'Proposal sent', 'Booked'], (s) => `<button class="${s === ENQ.filter ? 'is-on' : ''}" data-act="filter" data-value="${h(s)}">${h(s === 'Proposal sent' ? 'Sent' : s)} <span class="seg__n">${count(s)}</span></button>`)}</div>`;
       page('Enquiries', `${seg}
         <section class="card">${shown.length ? `<ul class="rows">${each(shown, enqRow)}</ul>`
           : `<p class="muted">${list.length ? 'Nothing here.' : 'No enquiries yet. New ones from the website’s forms appear here.'}</p>`}</section>
@@ -1377,7 +1379,22 @@
     if (!e) { page('Enquiry', '<section class="card"><p class="muted">That enquiry wasn’t found.</p></section>', { back: '#/enquiries' }); return; }
     const draft = { proposal: e.proposal, trip: e.trip || e.info['Destination'] || '', notes: e.notes };
     const wa = waNumber(e.phone);
-    const proposalText = () => `Hi ${firstName(e.name)}, here's your trip proposal from Fuyamo Travel${draft.trip ? ': ' + draft.trip : ''}.\n${draft.proposal}`;
+    // Group trips get a Yamo proposal; corporate enquiries get a PDF quote (a link to it, e.g. from Google Drive).
+    const quote = e.form === 'corporate';
+    const K = quote ? {
+      title: 'Quote', item: 'What it’s for', itemPh: 'e.g. Sales conference, Cape Town', link: 'Quote link', linkPh: 'https://drive.google.com/…',
+      intro: 'Make the quote as a PDF, add it to Google Drive (Share → General access: Anyone with the link) and paste its link here.',
+      follow: 'Plunk emails it to them and follows up until they reply.', send: 'Send quote', open: 'Open quote', noun: 'quote',
+      missing: 'Paste the link to the quote first (it starts with https://).', subject: 'Your quote from Fuyamo Travel',
+    } : {
+      title: 'Proposal', item: 'Trip', itemPh: 'e.g. Drakensberg team retreat', link: 'Yamo link', linkPh: 'https://app.yamo.travel/…',
+      intro: 'Build the trip on Yamo, then paste its link here.', follow: 'Plunk emails it to them and follows up until they book.',
+      send: 'Send proposal', open: 'Open on Yamo', noun: 'proposal',
+      missing: 'Paste the trip’s Yamo link first (it starts with https://).', subject: 'Your trip proposal from Fuyamo Travel',
+    };
+    const proposalText = () => quote
+      ? `Hi ${firstName(e.name)}, here's our quote${draft.trip ? ' for ' + draft.trip : ''}.\n${draft.proposal}\n\nTo go ahead, or if anything needs to change, just reply to this email.`
+      : `Hi ${firstName(e.name)}, here's your trip proposal from Fuyamo Travel${draft.trip ? ': ' + draft.trip : ''}.\n${draft.proposal}`;
     const mailto = (subject, body) => `mailto:${encodeURIComponent(e.email)}?subject=${encodeURIComponent(subject)}${body ? '&body=' + encodeURIComponent(body) : ''}`;
     const auto = ENQ.plunk && e.email;
 
@@ -1386,7 +1403,7 @@
       const sent = e.status !== 'New';
       page(e.name, `
         <section class="card">
-          <div class="card__head"><h2 class="card__title">${h(FORM_LABELS[e.form] || e.form)} ${statusTag(e.status)}</h2><small class="muted">${h(niceDate(e.received))} · ${h(ago(e.received))}</small></div>
+          <div class="card__head"><h2 class="card__title">${h(FORM_LABELS[e.form] || e.form)} ${statusTag(e.status, e.form)}</h2><small class="muted">${h(niceDate(e.received))} · ${h(ago(e.received))}</small></div>
           <div class="contact">
             ${e.email ? `<a class="btn" href="${h(mailto('Re: ' + e.subject))}">Email ${h(e.email)}</a>` : ''}
             ${wa ? `<a class="btn" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp ${h(e.phone)}</a>` : ''}
@@ -1397,21 +1414,21 @@
         </section>
 
         <section class="card">
-          <h2 class="card__title">Proposal</h2>
-          <p class="card__hint">Build the trip on Yamo, then paste its link here. ${auto ? 'Plunk emails it to them and follows up until they book.' : e.email ? 'Plunk isn’t connected yet, so this opens an email for you to send.' : 'They left a number only, so this opens WhatsApp with the link.'}</p>
+          <h2 class="card__title">${K.title}</h2>
+          <p class="card__hint">${K.intro} ${auto ? K.follow : e.email ? 'Plunk isn’t connected yet, so this opens an email for you to send.' : 'They left a number only, so this opens WhatsApp with the link.'}</p>
           <div class="grid-2">
-            ${field('Trip', `<input data-k="trip" value="${h(draft.trip)}" placeholder="e.g. Drakensberg team retreat">`)}
-            ${field('Yamo link', `<input data-k="proposal" type="url" value="${h(draft.proposal)}" placeholder="https://app.yamo.travel/…">`)}
+            ${field(K.item, `<input data-k="trip" value="${h(draft.trip)}" placeholder="${K.itemPh}">`)}
+            ${field(K.link, `<input data-k="proposal" type="url" value="${h(draft.proposal)}" placeholder="${K.linkPh}">`)}
           </div>
           <div class="btn-row">
-            <button class="btn-primary" data-act="propose">${sent && e.proposal ? 'Send again' : 'Send proposal'}</button>
-            ${e.proposal ? `<a class="link" href="${h(e.proposal)}" target="_blank" rel="noopener">Open on Yamo</a>` : ''}
+            <button class="btn-primary" data-act="propose">${sent && e.proposal ? 'Send again' : K.send}</button>
+            ${e.proposal ? `<a class="link" href="${h(e.proposal)}" target="_blank" rel="noopener">${K.open}</a>` : ''}
           </div>
         </section>
 
         <section class="card">
           <h2 class="card__title">Status</h2>
-          <div class="seg seg--scroll">${each(ENQ_STATUSES, (s) => `<button class="${s === e.status ? 'is-on' : ''}" data-act="setStatus" data-value="${h(s)}">${h(s)}</button>`)}</div>
+          <div class="seg seg--scroll">${each(ENQ_STATUSES, (s) => `<button class="${s === e.status ? 'is-on' : ''}" data-act="setStatus" data-value="${h(s)}">${h(statusName(s, e.form))}</button>`)}</div>
           <p class="card__hint card__hint--below">${auto ? 'Booked or Not going ahead stops Plunk’s reminders.' : 'Keeps track of where each enquiry is.'}${e.updated ? ` Last changed ${h(ago(e.updated))}${e.updated_by ? ' by ' + h(e.updated_by) : ''}.` : ''}${h(plunkNote(e.plunk))}</p>
           ${field('Notes for the team', `<textarea data-k="notes" rows="3" placeholder="Called them, sent a second option…">${h(draft.notes)}</textarea>`)}
           <button class="btn" data-act="notes">Save notes</button>
@@ -1437,19 +1454,19 @@
       act: {
         setStatus(el) {
           if (el.dataset.value === e.status) return;
-          update({ status: el.dataset.value }, el, (r) => 'Marked as ' + el.dataset.value.toLowerCase() + '.' + (r.plunk && /✓/.test(r.plunk) && /Booked|Not going/.test(el.dataset.value) ? ' Plunk stops the reminders.' : ''));
+          update({ status: el.dataset.value }, el, (r) => 'Marked as ' + statusName(el.dataset.value, e.form).toLowerCase() + '.' + (r.plunk && /✓/.test(r.plunk) && /Booked|Not going/.test(el.dataset.value) ? ' Plunk stops the reminders.' : ''));
         },
         notes(el) { update({ notes: draft.notes }, el, () => 'Notes saved.'); },
         propose(el) {
-          if (!/^https:\/\/\S+$/.test(draft.proposal)) { toast('Paste the trip’s Yamo link first (it starts with https://).', 'error'); $('[data-k="proposal"]').focus(); return; }
+          if (!/^https:\/\/\S+$/.test(draft.proposal)) { toast(K.missing, 'error'); $('[data-k="proposal"]').focus(); return; }
           const again = e.status !== 'New' && e.proposal;
           // Without Plunk, open the message for them to send themselves (opened now, while it still counts as a tap).
           if (!auto) {
-            if (e.email) location.href = mailto('Your trip proposal from Fuyamo Travel', proposalText() + '\n\nAny questions, just reply to this email.\n\nFuyamo Travel');
+            if (e.email) location.href = mailto(K.subject, proposalText() + (quote ? '' : '\n\nAny questions, just reply to this email.') + '\n\nFuyamo Travel');
             else if (wa) window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(proposalText()), '_blank', 'noopener');
           }
           update({ status: 'Proposal sent', proposal: draft.proposal, trip: draft.trip, resend: !!again }, el,
-            (r) => (auto ? (/✓/.test(r.plunk || '') ? 'Proposal sent. Plunk is emailing it to ' + e.email + '.' : 'Saved, but Plunk didn’t send it.' + plunkNote(r.plunk)) : 'Marked as proposal sent.'));
+            (r) => (auto ? (/✓/.test(r.plunk || '') ? (quote ? 'Quote' : 'Proposal') + ' sent. Plunk is emailing it to ' + e.email + '.' : 'Saved, but Plunk didn’t send it.' + plunkNote(r.plunk)) : 'Marked as ' + K.noun + ' sent.'));
         },
       },
     };
@@ -1492,7 +1509,8 @@
     const changed = body.status && body.status !== row.status;
     ['status', 'proposal', 'trip', 'notes'].forEach((k) => { if (body[k] !== undefined) row[k] = body[k]; });
     row.updated = new Date().toISOString(); row.updated_by = 'info@fuyamo.co.za';
-    const plunk = (changed || body.resend) && row.email ? ({ 'Proposal sent': 'proposal_sent', Booked: 'booked', 'Not going ahead': 'not_going_ahead' }[row.status] || '') + ' ✓' : '';
+    const event = row.form === 'corporate' && row.status === 'Proposal sent' ? 'quote_sent' : { 'Proposal sent': 'proposal_sent', Booked: 'booked', 'Not going ahead': 'not_going_ahead' }[row.status];
+    const plunk = (changed || body.resend) && row.email && event ? event + ' ✓' : '';
     if (plunk) row.plunk = plunk;
     return new Promise((resolve) => setTimeout(() => resolve({ ok: true, enquiry: clone(row), plunk }), 300));
   }

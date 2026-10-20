@@ -26,8 +26,10 @@ const COLUMNS = ['id', 'received', 'form', 'status', 'name', 'email', 'phone', '
 const HEADINGS = ['ID', 'Received', 'Form', 'Status', 'Name', 'Email', 'Phone', 'Subject', 'Details', 'Trip news', 'Proposal link', 'Trip', 'Notes', 'Updated', 'Updated by', 'Plunk'];
 const STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
 const FORMS = { corporate: 'Corporate enquiry', callback: 'Callback request', birthday: 'Birthday offer' };
-// Plunk events sent when the status changes in the dashboard.
+// Plunk events sent when the status changes in the dashboard. Corporate enquiries get a PDF quote rather than a Yamo
+// proposal, so "Proposal sent" is quote_sent for them (its own workflow and emails).
 const STATUS_EVENTS = { 'Proposal sent': 'proposal_sent', Booked: 'booked', 'Not going ahead': 'not_going_ahead' };
+const statusEvent = (row) => (row.form === 'corporate' && row.status === 'Proposal sent' ? 'quote_sent' : STATUS_EVENTS[row.status]);
 
 // ---------- Web requests ----------
 
@@ -180,11 +182,14 @@ function admin(body) {
     }
     // Moving to Proposal sent, Booked or Not going ahead tells Plunk, so its workflows email the customer.
     let plunk = '';
-    if (changed && STATUS_EVENTS[row.status] && row.email && plunkKey()) {
-      // proposal_status stays on the contact, so Plunk's follow-up workflow can check it before each reminder.
-      plunk = plunkTrack(row.email, STATUS_EVENTS[row.status], {
-        name: row.name, first_name: row.name.split(' ')[0], proposal_link: row.proposal, trip: row.trip, proposal_status: row.status,
-      }, undefined, row.id + ':' + STATUS_EVENTS[row.status] + ':' + row.updated);
+    const event = statusEvent(row);
+    if (changed && event && row.email && plunkKey()) {
+      // proposal_status stays on the contact, so Plunk's follow-up workflows can check it before each reminder.
+      let company = '';
+      try { company = JSON.parse(row.details || '{}')['Company / department'] || ''; } catch (err) { /* no details */ }
+      plunk = plunkTrack(row.email, event, {
+        name: row.name, first_name: row.name.split(' ')[0], proposal_link: row.proposal, trip: row.trip, proposal_status: row.status, company,
+      }, undefined, row.id + ':' + event + ':' + row.updated);
       setCell(row.id, 'plunk', plunk);
       row.plunk = plunk;
     }
