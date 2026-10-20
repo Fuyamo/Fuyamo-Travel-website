@@ -1339,7 +1339,7 @@
   // "R15 000 pp" → 15000
   const rands = (v) => { const n = parseFloat(String(v || '').replace(/[^\d.]/g, '')); return n > 0 ? String(Math.round(n)) : ''; };
   // The sheet's Plunk column ("proposal_sent ✓", or "… ✗ reason") in words.
-  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal passed on for emailing', quote_sent: 'quote passed on for emailing', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
+  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal passed on for emailing', quote_sent: 'quote passed on for emailing', yamo_proposal_sent: 'reminders started (Yamo emailed the proposal)', proposal_resent: 'proposal emailed again', quote_resent: 'quote emailed again', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
   function plunkNote(p) {
     const m = String(p || '').match(/^(\w+) (✓|✗)\s*(.*)$/);
     if (!m) return '';
@@ -1456,14 +1456,19 @@
           ${e.news === 'Yes' ? '<p class="card__hint">They asked for trip news by email.</p>' : ''}
         </section>
 
-        ${partner ? '' : `<section class="card">
+        ${partner || quote ? '' : `<section class="card">
           <div class="card__head"><h2 class="card__title">Yamo</h2>${e.yamo ? '<button class="link" data-act="yamoRefresh">Refresh</button>' : ''}</div>
           ${e.yamo ? `<p class="card__hint card__hint--below" id="yamo-status">${h(yamoLine(yamo))}</p>`
-    : `<p class="card__hint">Send this enquiry to Yamo’s Agency OS (Tailored → Requests) to build the trip and send the proposal there.${ENQ.yamo ? '' : ' Yamo isn’t connected yet: add YAMO_API_KEY to the Google script (see the README).'}</p>
+    : e.status !== 'New' ? '<p class="card__hint card__hint--below">Not sent to Yamo: this enquiry already has a proposal or is closed, and Yamo would email them a second one.</p>'
+    : `<p class="card__hint">Send this enquiry to Yamo’s Agency OS (Tailored → Requests) to build the trip there. Yamo then emails them the proposal, and Fuyamo only follows up.${ENQ.yamo ? '' : ' Yamo isn’t connected yet: add YAMO_API_KEY to the Google script (see the README).'}</p>
           <button class="btn" data-act="yamoSend" ${ENQ.yamo ? '' : 'disabled'}>${icon('external', 16)} Send to Yamo</button>`}
         </section>`}
 
-        ${partner ? '' : `<section class="card">
+        ${partner ? '' : e.yamo ? `<section class="card">
+          <h2 class="card__title">Proposal</h2>
+          <p class="card__hint card__hint--below">Yamo emails the proposal when you send it from Agency OS, so there’s nothing to send here. Within the hour this enquiry moves to Proposal sent, and ${auto ? 'Plunk follows up after 3 and 10 days unless they book.' : 'you follow up yourself (they left no email).'}</p>
+          ${e.proposal ? `<a class="link" href="${h(e.proposal)}" target="_blank" rel="noopener">Open the proposal</a>` : ''}
+        </section>` : `<section class="card">
           <h2 class="card__title">${K.title}</h2>
           <p class="card__hint">${K.intro} ${auto ? K.follow : e.email ? 'Plunk isn’t connected yet, so this opens an email for you to send.' : 'They left a number only, so this opens WhatsApp with the link.'}</p>
           <div class="grid-2">
@@ -1500,16 +1505,14 @@
     };
     const checkYamo = async () => {
       if (!e.yamo || partner) return;
-      try { yamo = (await enqApi({ action: 'yamo_status', id: e.id })).yamo; } catch (err) { yamo = { error: err.message }; }
+      let r = null;
+      try { r = await enqApi({ action: 'yamo_status', id: e.id }); yamo = r.yamo; } catch (err) { yamo = { error: err.message }; }
       const line = $('#yamo-status');
       if (line) line.textContent = yamoLine(yamo);
-      if (yamo && yamo.bookingId && (e.status === 'New' || e.status === 'Proposal sent')) {
-        try {
-          const r = await enqApi({ action: 'update', id: e.id, status: 'Booked' });
-          Object.assign(e, parseEnquiry(r.enquiry));
-          draw();
-          toast('Yamo shows they booked, so this is now marked as booked.');
-        } catch (err) { /* stays as it is; they can mark it by hand */ }
+      if (r && r.changed && r.enquiry) {
+        Object.assign(e, parseEnquiry(r.enquiry));
+        draw();
+        toast({ Booked: 'Yamo shows they booked, so this is now marked as booked.', 'Proposal sent': 'Yamo shows the proposal was sent, so this is now marked as proposal sent.', 'Not going ahead': 'Yamo shows it was declined or closed, so this is now marked as not going ahead.' }[e.status] || 'Updated from Yamo.');
       }
     };
     const sendToYamo = () => {
@@ -1618,7 +1621,14 @@
       r.yamo = 'yq_mock_' + r.id;
       return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: { id: r.yamo, status: 'new', closed: false, bookingId: '' } }), 400));
     }
-    if (body.action === 'yamo_status') return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: { id: 'yq', status: 'sent', closed: false, bookingId: body.id === 'EMOCK3' ? 'bk_1' : '' } }), 400));
+    if (body.action === 'yamo_ping') return Promise.resolve({ ok: true, agency: 'Fuyamo Travel (test)' });
+    if (body.action === 'yamo_status') {
+      const r = mockList.find((x) => x.id === body.id);
+      const y = { id: r.yamo, status: 'sent', closed: false, bookingId: '', proposal: { url: 'https://app.yamo.travel/p/mock', sentAt: 'now' } };
+      const changed = r.status === 'New';
+      if (changed) { r.status = 'Proposal sent'; r.proposal = y.proposal.url; r.plunk = 'yamo_proposal_sent ✓'; }
+      return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: y, enquiry: clone(r), changed }), 400));
+    }
     const row = mockList.find((x) => x.id === body.id);
     const changed = body.status && body.status !== row.status;
     ['status', 'proposal', 'trip', 'notes'].forEach((k) => { if (body[k] !== undefined) row[k] = body[k]; });
@@ -1678,12 +1688,21 @@
           ${field('Enquiries script address', `<input name="url" type="url" value="${h(((S.settings && S.settings.enquiries) || {}).url || '')}" placeholder="https://script.google.com/macros/s/…/exec">`)}
           <div><button class="btn-primary" type="submit">Save</button></div>
         </form>
+        <button class="btn" data-act="yamoPing">Check Yamo connection</button>
       </section>
       <section class="card">
         <h2 class="card__title">This device</h2>
         <button class="btn" data-act="signout">${icon('out', 16)} Sign out</button>
       </section>`);
-    V = { act: { signout: signOut } };
+    V = { act: {
+      signout: signOut,
+      async yamoPing(el) {
+        if (!gaConnected()) { try { await gaConnect(); } catch (err) { toast(err.message, 'error'); return; } }
+        el.disabled = true;
+        try { toast('Connected to Yamo as ' + (await enqApi({ action: 'yamo_ping' })).agency + '.'); } catch (err) { toast(err.message, 'error'); }
+        el.disabled = false;
+      },
+    } };
   }
 
   const tokenHelp = () => `<details class="help"><summary>How to make a token</summary><ol>

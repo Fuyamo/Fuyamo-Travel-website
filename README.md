@@ -83,19 +83,33 @@ The script tells [Plunk](https://useplunk.com) about each enquiry that has an em
 | `enquiry_received` | A form with an email address arrives (at most once per address every 6 hours) | `name`, `first_name`, `enquiry_type`, `enquiry_about` |
 | `proposal_sent` | **Send proposal** in the admin (group trips: a Yamo link) | `name`, `first_name`, `trip`, `proposal_link`, `proposal_status` |
 | `quote_sent` | **Send quote** in the admin (corporate enquiries: a link to the PDF quote) | same, plus `company` |
+| `yamo_proposal_sent` | Yamo has emailed the proposal (found by the hourly check or when the enquiry is opened) | same as `proposal_sent` |
+| `proposal_resent`, `quote_resent` | **Send again** in the admin | same |
 | `booked` | Status set to Booked | same |
 | `not_going_ahead` | Status set to Not going ahead | same |
 
-Workflows in Plunk: **Enquiry reply** (`enquiry_received` → the Enquiry received email) and **Proposal follow-up** (`proposal_sent` → Your proposal, then after 3 days and again after 7 more, a reminder only while the contact's `proposal_status` is still "Proposal sent"; Booked or Not going ahead in the admin stops them), and **Quote follow-up** (`quote_sent` → Your quote, Quote reminder, Quote last follow-up, the same way).
+Workflows in Plunk: **Enquiry reply** (`enquiry_received` → the Enquiry received email) and **Proposal follow-up** (`proposal_sent` → Your proposal, then after 3 days and again after 7 more, a reminder only while the contact's `proposal_status` is still "Proposal sent"; Booked or Not going ahead in the admin stops them), **Quote follow-up** (`quote_sent` → Your quote, Quote reminder, Quote last follow-up, the same way), **Yamo proposal follow-up** (`yamo_proposal_sent` → the two reminders only), and **Proposal resend** / **Quote resend** (one email each).
 
 Partnerships: the corporate form's **Partnerships** type (hotels, venues, suppliers, brands and other opportunities) hides the trip fields. In the admin these have no Quote card and their statuses read New, In discussion, Agreed, Not going ahead. They get the thank-you email, and nothing else is emailed automatically.
 
 ### Yamo (Send to Yamo)
 
-Each enquiry (not partnerships) has a **Yamo** card in the admin. **Send to Yamo** opens a short form (where to, travellers 1–20, dates, budget, what they want), prefilled from the enquiry, and sends it to Yamo's Agency API. It then appears in Agency OS under **Tailored → Requests**, where you build the trip and send the proposal. The card shows where it is on Yamo (being built, proposal sent, accepted…), and when Yamo shows a booking the enquiry is marked **Booked** automatically, which also stops Plunk's reminders. Sending twice can't create a duplicate (the enquiry's ID is sent as Yamo's `externalRef`).
+**One message per step.** Each customer hears from one place at a time:
+
+| Step | Who contacts them |
+|---|---|
+| Enquiry received | Fuyamo's thank-you email (Plunk), once per address every 6 hours. (Yamo also sends a short note when an enquiry reaches it; Fuyamo has asked Yamo to switch that off for API enquiries.) |
+| Proposal (trip sent to Yamo) | Yamo emails it from Agency OS. The admin has no Send button for these. |
+| Proposal (trip not sent to Yamo) | Plunk's "Your proposal" email. Such an enquiry can't be sent to Yamo afterwards. |
+| Corporate quote | Plunk's "Your quote" email. Corporate enquiries have no Yamo button. |
+| Reminders after 3 and 10 days | Plunk only (Yamo sends none), and only while the status is still Proposal sent. |
+| Send again | Emails the proposal or quote again (proposal_resent / quote_resent); the running reminders carry on, no second set. |
+
+Each trip enquiry (not corporate, not partnerships) has a **Yamo** card in the admin. **Send to Yamo** opens a short form (where to, travellers 1–20, dates, budget, what they want), prefilled from the enquiry, and sends it to Yamo's Agency API. It then appears in Agency OS under **Tailored → Requests**, where you build the trip and send the proposal. The card shows where it is on Yamo (being built, proposal sent, accepted…), and when Yamo shows a booking the enquiry is marked **Booked** automatically, which also stops Plunk's reminders. Sending twice can't create a duplicate (the enquiry's ID is sent as Yamo's `externalRef`).
 
 - **Key:** create an API key in Agency OS → Settings → Integrations and add it to the Google script as the script property `YAMO_API_KEY` (Apps Script → Project Settings → Script properties). It's secret and is only used by the script, never on the website. Yamo's tailored requests need the Growth plan or higher.
-- **Webhooks** aren't used: Yamo signs them with headers that Google Apps Script can't read, so the admin asks Yamo for the status instead.
+- **Keeping in step:** the script function `syncYamo` runs every hour (Apps Script → Triggers) and checks every open enquiry that was sent to Yamo. When Yamo has sent the proposal, the enquiry becomes Proposal sent with the Yamo link and Plunk starts the reminders only (`yamo_proposal_sent`); a booking makes it Booked, a decline or close makes it Not going ahead (both stop the reminders). Opening the enquiry in the admin does the same check straight away. Settings has **Check Yamo connection**.
+- **Webhooks** aren't used: Yamo signs them with headers that Google Apps Script can't read, so the script asks Yamo instead.
 
 ### Measuring enquiries
 

@@ -175,13 +175,16 @@ function admin(body) {
   if (body.action === 'update') {
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
-    let row, changed;
+    let row, changed, resendOnly;
     try {
       const sheet = enquirySheet(), all = rows(sheet), i = all.findIndex((r) => r.id === body.id);
       if (i < 0) return { ok: false, error: 'That enquiry wasn’t found.' };
       row = all[i];
       const status = STATUSES.indexOf(body.status) >= 0 ? body.status : row.status;
-      changed = status !== row.status || (body.resend === true && status === 'Proposal sent');
+      // "Send again" on a proposal that's already out only emails it again: the reminders already running carry on,
+      // so nobody gets two sets of them.
+      resendOnly = body.resend === true && row.status === 'Proposal sent' && status === 'Proposal sent';
+      changed = status !== row.status || resendOnly;
       row.status = status;
       if (body.proposal !== undefined) row.proposal = clean(body.proposal, 500);
       if (row.proposal && !/^https:\/\//.test(row.proposal)) return { ok: false, error: 'The proposal link should start with https://' };
@@ -194,18 +197,10 @@ function admin(body) {
       lock.releaseLock();
     }
     // Moving to Proposal sent, Booked or Not going ahead tells Plunk, so its workflows email the customer.
-    let plunk = '';
-    const event = statusEvent(row);
-    if (changed && event && row.email && plunkKey()) {
-      // proposal_status stays on the contact, so Plunk's follow-up workflows can check it before each reminder.
-      let company = '';
-      try { company = JSON.parse(row.details || '{}')['Company / department'] || ''; } catch (err) { /* no details */ }
-      plunk = plunkTrack(row.email, event, {
-        name: row.name, first_name: row.name.split(' ')[0], proposal_link: row.proposal, trip: row.trip, proposal_status: row.status, company,
-      }, undefined, row.id + ':' + event + ':' + row.updated);
-      setCell(row.id, 'plunk', plunk);
-      row.plunk = plunk;
-    }
+    // An enquiry that's with Yamo had its proposal emailed by Yamo, so "Proposal sent" only starts Plunk's reminders.
+    const event = resendOnly ? (row.form === 'corporate' ? 'quote_resent' : 'proposal_resent')
+      : row.yamo && row.status === 'Proposal sent' ? 'yamo_proposal_sent' : statusEvent(row);
+    const plunk = changed && event ? tellPlunk(row, event) : '';
     return { ok: true, enquiry: row, plunk };
   }
 
@@ -235,19 +230,86 @@ function admin(body) {
     return { ok: true, yamo: res.enquiry };
   }
 
-  // Where the enquiry is on Yamo: being built, proposal sent, accepted, booked…
+  // Where the enquiry is on Yamo (being built, proposal sent, accepted, booked…), and the enquiry brought up to date.
   if (body.action === 'yamo_status') {
     if (!yamoKey()) return { ok: false, error: 'Yamo isn’t connected yet.' };
     const row = rows(enquirySheet()).find((r) => r.id === body.id);
     if (!row || !row.yamo) return { ok: false, error: 'This enquiry hasn’t been sent to Yamo.' };
     const res = yamoCall('get', '/enquiries/' + encodeURIComponent(row.yamo));
-    return res.ok ? { ok: true, yamo: res.enquiry } : res;
+    if (!res.ok) return res;
+    const changed = applyYamo(row, res.enquiry);
+    return { ok: true, yamo: res.enquiry, enquiry: row, changed: !!changed };
+  }
+
+  // Settings: is the Yamo key working, and for which agency?
+  if (body.action === 'yamo_ping') {
+    if (!yamoKey()) return { ok: false, error: 'Yamo isn’t connected yet. Add YAMO_API_KEY under Project Settings → Script properties.' };
+    const res = yamoCall('get', '/ping');
+    return res.ok ? { ok: true, agency: String(res.raw.name || res.raw.slug || 'your agency') } : res;
   }
 
   return { ok: false, error: 'Unknown request.' };
 }
 
+// Tells Plunk about a status change (its workflows email the customer). proposal_status stays on the contact, so the
+// follow-up workflows can check it before each reminder. Returns the note for the sheet's Plunk column.
+function tellPlunk(row, event) {
+  if (!row.email || !plunkKey()) return '';
+  let company = '';
+  try { company = JSON.parse(row.details || '{}')['Company / department'] || ''; } catch (err) { /* no details */ }
+  const plunk = plunkTrack(row.email, event, {
+    name: row.name, first_name: row.name.split(' ')[0], proposal_link: row.proposal, trip: row.trip, proposal_status: row.status, company,
+  }, undefined, row.id + ':' + event + ':' + row.updated);
+  setCell(row.id, 'plunk', plunk);
+  row.plunk = plunk;
+  return plunk;
+}
+
+function writeRow(row) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sheet = enquirySheet(), i = rows(sheet).findIndex((r) => r.id === row.id);
+    if (i >= 0) sheet.getRange(i + 2, 1, 1, COLUMNS.length).setValues([COLUMNS.map((c) => safeCell(row[c]))]);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ---------- Yamo ----------
+
+// Brings an open enquiry up to date with Yamo, so the customer only ever hears from one place:
+// - Yamo emailed the proposal → "Proposal sent", and Plunk starts the reminders only (yamo_proposal_sent).
+// - They booked → "Booked"; they declined or it was closed → "Not going ahead" (either stops the reminders).
+// Returns the new status, or '' when nothing changed.
+function applyYamo(row, y) {
+  if (!y || (row.status !== 'New' && row.status !== 'Proposal sent')) return '';
+  let status = row.status, event = '';
+  if (y.bookingId) { status = 'Booked'; event = 'booked'; }
+  else if (y.status === 'declined' || y.closed) { status = 'Not going ahead'; event = 'not_going_ahead'; }
+  else if (row.status === 'New' && (y.proposal || ['sent', 'changes', 'accepted'].indexOf(y.status) >= 0)) { status = 'Proposal sent'; event = 'yamo_proposal_sent'; }
+  if (status === row.status) return '';
+  row.status = status;
+  const url = y.proposal && y.proposal.url ? String(y.proposal.url) : '';
+  if (url && !row.proposal) row.proposal = /^https:\/\//.test(url) ? url : 'https://' + url.replace(/^\/+|^http:\/\//, '');
+  row.updated = new Date().toISOString();
+  row.updated_by = 'Yamo';
+  writeRow(row);
+  tellPlunk(row, event);
+  return status;
+}
+
+// Runs every hour (Apps Script → Triggers): checks each open enquiry that was sent to Yamo, so reminders stop as soon
+// as someone books, even if nobody opens the admin.
+function syncYamo() {
+  if (!yamoKey()) return;
+  rows(enquirySheet()).filter((r) => r.yamo && (r.status === 'New' || r.status === 'Proposal sent')).slice(0, 100).forEach((row) => {
+    const res = yamoCall('get', '/enquiries/' + encodeURIComponent(row.yamo));
+    const changed = res.ok ? applyYamo(row, res.enquiry) : '';
+    if (changed) console.log(row.id + ' → ' + changed);
+    else if (!res.ok) console.error(row.id + ': ' + res.error);
+  });
+}
 
 function yamoKey() {
   return PropertiesService.getScriptProperties().getProperty('YAMO_API_KEY') || '';
@@ -263,9 +325,10 @@ function yamoCall(method, path, payload) {
   let data = {};
   try { data = JSON.parse(res.getContentText()); } catch (err) { /* not JSON */ }
   if (code >= 200 && code < 300) {
-    const e = data.enquiry || data;
-    return { ok: true, enquiry: {
-      id: e.id, status: e.status, closed: !!e.closed, proposal: e.proposal || null, tripId: e.tripId || '', bookingId: e.bookingId || '', updatedAt: e.updatedAt || '',
+    const e = data.enquiry || data, p = e.proposal;
+    return { ok: true, raw: data, enquiry: {
+      id: e.id, status: e.status, closed: !!e.closed, tripId: e.tripId || '', bookingId: e.bookingId || '', updatedAt: e.updatedAt || '',
+      proposal: p ? { url: p.url || '', sentAt: p.sentAt || '', openedAt: p.openedAt || '' } : null,
     } };
   }
   const messages = {
