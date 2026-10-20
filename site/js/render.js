@@ -797,13 +797,19 @@ window.FUYAMO_RENDER = (function (C) {
 
   // ---------- Corporate ----------
 
+  const QUOTE_NOTES = 'Who’s travelling, when, approvals needed, or any questions…';
   const defaultQuote = () => ({ tab: 0, inc: new Set(C.CORP_INCLUDES_DEFAULT), notes: '' });
+
+  // A partnership isn't a trip, so the trip fields and needs are left out for it.
+  const quoteFields = (tab) => C.CORP_FIELDS.filter((f) => !(tab.partner && f.trip));
+  const quoteNeeds = (q, tab) => (tab.partner ? '' : C.CORP_INCLUDES.filter((k) => q.inc.has(k)).join(', '));
+  const quoteSubject = (q, tab) => (tab.partner ? 'Partnership enquiry' : 'Corporate enquiry: ' + tab.label);
 
   function quoteMessage(q) {
     const tab = C.CORP_TABS[q.tab];
-    const lines = ['Hi Fuyamo, I have a corporate travel enquiry: ' + tab.label];
-    C.CORP_FIELDS.forEach((f) => { if (q[f.k]) lines.push((f.k === 'size' ? tab.sizeLabel : f.label) + ': ' + q[f.k]); });
-    const inc = C.CORP_INCLUDES.filter((k) => q.inc.has(k)).join(', ');
+    const lines = [tab.partner ? 'Hi Fuyamo, I have a partnership enquiry.' : 'Hi Fuyamo, I have a corporate travel enquiry: ' + tab.label];
+    quoteFields(tab).forEach((f) => { if (q[f.k]) lines.push((f.k === 'size' ? tab.sizeLabel : f.label) + ': ' + q[f.k]); });
+    const inc = quoteNeeds(q, tab);
     if (inc) lines.push('Include: ' + inc);
     if (q.notes) lines.push('Message: ' + q.notes);
     return lines.join('\n');
@@ -813,11 +819,11 @@ window.FUYAMO_RENDER = (function (C) {
   // kept as-is so replies go straight to the person who asked.
   function quoteSubmission(q) {
     const tab = C.CORP_TABS[q.tab];
-    const data = { _form: 'corporate', _subject: 'Corporate enquiry: ' + tab.label + (q.company ? ' · ' + q.company : ''), 'Enquiry type': tab.label };
-    C.CORP_FIELDS.forEach((f) => {
+    const data = { _form: 'corporate', _subject: quoteSubject(q, tab) + (q.company ? ' · ' + q.company : ''), 'Enquiry type': tab.label };
+    quoteFields(tab).forEach((f) => {
       if (q[f.k]) data[['name', 'email', 'phone'].includes(f.k) ? f.k : f.k === 'size' ? tab.sizeLabel : f.label] = q[f.k];
     });
-    const inc = C.CORP_INCLUDES.filter((k) => q.inc.has(k)).join(', ');
+    const inc = quoteNeeds(q, tab);
     if (inc) data['Needs'] = inc;
     if (q.notes) data['Message'] = q.notes;
     return data;
@@ -841,7 +847,7 @@ window.FUYAMO_RENDER = (function (C) {
   }
 
   const quoteEmail = (q) => 'mailto:' + SITE.email
-    + '?subject=' + encodeURIComponent('Corporate enquiry: ' + C.CORP_TABS[q.tab].label)
+    + '?subject=' + encodeURIComponent(quoteSubject(q, C.CORP_TABS[q.tab]))
     + '&body=' + encodeURIComponent(quoteMessage(q));
 
   function corporatePage() {
@@ -885,19 +891,19 @@ window.FUYAMO_RENDER = (function (C) {
           <input type="text" name="_honey" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true">
           <div class="stack gap-8"><span class="quote__title" id="quote-title">${esc(tab.title)}</span><span class="quote__sub" id="quote-sub">${esc(tab.sub)}</span></div>
           <div class="fields">${each(C.CORP_FIELDS, (f) => `
-            <label class="field">
+            <label class="field"${f.trip ? ' data-trip-field' : ''}>
               <span class="field__label">${f.k === 'size' ? `<span id="quote-size-label">${esc(tab.sizeLabel)}</span>` : esc(f.label)} ${f.req ? '<b>*</b>' : ''}</span>
               <input type="${f.type}" name="${f.name || f.k}" data-quote="${f.k}" value="" placeholder="${esc(f.ph)}"${f.autocomplete ? ` autocomplete="${f.autocomplete}"` : ''}${f.req ? ' required' : ''}>
             </label>`)}
           </div>
-          <div class="stack gap-12">
+          <div class="stack gap-12" data-trip-field>
             <span class="field__label">WHAT DO YOU NEED?</span>
             <div class="inc-chips">${each(C.CORP_INCLUDES, (k) => {
               const on = q.inc.has(k);
               return `<button type="button" class="inc-chip${on ? ' is-on' : ''}" data-action="quote-inc" data-value="${esc(k)}" aria-pressed="${on}"><span class="inc-chip__box" aria-hidden="true">${on ? '✓' : ''}</span>${esc(k)}</button>`;
             })}</div>
           </div>
-          <label class="field"><span class="field__label">TELL US MORE</span><textarea name="message" data-quote="notes" rows="4" placeholder="Who's travelling, when, approvals needed, or any questions…"></textarea></label>
+          <label class="field"><span class="field__label">TELL US MORE</span><textarea name="message" data-quote="notes" rows="4" placeholder="${esc(tab.notes || QUOTE_NOTES)}" id="quote-notes"></textarea></label>
           <label class="consent"><input type="checkbox" name="_news" value="yes"><span>Email me trip news and offers</span></label>
           <div class="quote__actions">
             <button type="submit" class="send-btn" id="quote-submit"><span class="send-btn__label">Send enquiry</span><span aria-hidden="true">→</span></button>
@@ -1123,7 +1129,7 @@ window.FUYAMO_RENDER = (function (C) {
     C, TRIPS, DEPARTURES, ACTIVE_MONTHS, SEASON, STYLES, MONTHS, WA,
     esc, link, wa, formatDate, findTrip, findPost, yamoLink, navSection,
     nav, footer, page, megaColumns, bentoItems, tripResults, departingCards, departingKey,
-    defaultQuote, quoteMessage, quoteEmail, quoteSubmission, primaryContact,
+    defaultQuote, quoteMessage, quoteEmail, quoteSubmission, QUOTE_NOTES, primaryContact,
     matchTrips, findOptions, callbackPanel, birthdayPopup, monthTrips, shareText,
   };
 })(window.FUYAMO);

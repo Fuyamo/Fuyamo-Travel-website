@@ -1292,9 +1292,13 @@
   const ENQ_STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
   const FORM_LABELS = { corporate: 'Corporate', callback: 'Callback', birthday: 'Birthday offer' };
   const enqConfigured = () => !!(S.settings && S.settings.enquiries && S.settings.enquiries.url && S.settings.ga && S.settings.ga.client);
-  // Corporate enquiries get a PDF quote, so their "Proposal sent" reads "Quote sent" (the sheet keeps one status list).
-  const statusName = (s, form) => (form === 'corporate' && s === 'Proposal sent' ? 'Quote sent' : s);
-  const statusTag = (s, form) => `<span class="state state--${slugify(s)}">${h(statusName(s, form))}</span>`;
+  // The sheet keeps one status list; it reads differently per kind of enquiry. Corporate enquiries get a PDF quote
+  // ("Quote sent"); partnerships and opportunities (a corporate form type) aren't quoted at all.
+  const isPartner = (e) => e.form === 'corporate' && !!e.info && e.info['Enquiry type'] === 'Partnerships';
+  const formLabel = (e) => (isPartner(e) ? 'Partnership' : FORM_LABELS[e.form] || e.form);
+  const statusName = (s, e) => (isPartner(e) ? { 'Proposal sent': 'In discussion', Booked: 'Agreed' }[s] || s
+    : e.form === 'corporate' && s === 'Proposal sent' ? 'Quote sent' : s);
+  const statusTag = (s, e) => `<span class="state state--${slugify(s)}">${h(statusName(s, e))}</span>`;
   const waNumber = (phone) => String(phone || '').replace(/[^\d]/g, '');
   const firstName = (name) => String(name || '').trim().split(/\s+/)[0];
   // The sheet's Plunk column ("proposal_sent ✓", or "… ✗ reason") in words.
@@ -1340,8 +1344,8 @@
     const when = new Date(e.received);
     return `<li><a href="#/enquiries/${h(e.id)}" class="row">
       <span class="row__date"><strong>${when.getDate() || ''}</strong>${MONTHS[when.getMonth()] || ''}</span>
-      <span class="row__text"><strong>${h(e.name)} <em class="tag tag--muted">${h(FORM_LABELS[e.form] || e.form)}</em></strong><small>${h(ago(e.received))} · ${h(enqAbout(e) || e.email || e.phone)}</small></span>
-      ${statusTag(e.status, e.form)}${icon('chevron', 18)}</a></li>`;
+      <span class="row__text"><strong>${h(e.name)} <em class="tag tag--muted">${h(formLabel(e))}</em></strong><small>${h(ago(e.received))} · ${h(enqAbout(e) || e.email || e.phone)}</small></span>
+      ${statusTag(e.status, e)}${icon('chevron', 18)}</a></li>`;
   };
   function googleCard(where, title) {
     return `<h2 class="card__title">${h(title)}</h2><p class="muted">Sign in with your fuyamo.co.za Google account (info@fuyamo.co.za).</p>
@@ -1380,7 +1384,7 @@
     const draft = { proposal: e.proposal, trip: e.trip || e.info['Destination'] || '', notes: e.notes };
     const wa = waNumber(e.phone);
     // Group trips get a Yamo proposal; corporate enquiries get a PDF quote (a link to it, e.g. from Google Drive).
-    const quote = e.form === 'corporate';
+    const quote = e.form === 'corporate', partner = isPartner(e);
     const K = quote ? {
       title: 'Quote', item: 'What it’s for', itemPh: 'e.g. Sales conference, Cape Town', link: 'Quote link', linkPh: 'https://drive.google.com/…',
       intro: 'Make the quote as a PDF, add it to Google Drive (Share → General access: Anyone with the link) and paste its link here.',
@@ -1403,7 +1407,7 @@
       const sent = e.status !== 'New';
       page(e.name, `
         <section class="card">
-          <div class="card__head"><h2 class="card__title">${h(FORM_LABELS[e.form] || e.form)} ${statusTag(e.status, e.form)}</h2><small class="muted">${h(niceDate(e.received))} · ${h(ago(e.received))}</small></div>
+          <div class="card__head"><h2 class="card__title">${h(formLabel(e))} ${statusTag(e.status, e)}</h2><small class="muted">${h(niceDate(e.received))} · ${h(ago(e.received))}</small></div>
           <div class="contact">
             ${e.email ? `<a class="btn" href="${h(mailto('Re: ' + e.subject))}">Email ${h(e.email)}</a>` : ''}
             ${wa ? `<a class="btn" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp ${h(e.phone)}</a>` : ''}
@@ -1413,7 +1417,7 @@
           ${e.news === 'Yes' ? '<p class="card__hint">They asked for trip news by email.</p>' : ''}
         </section>
 
-        <section class="card">
+        ${partner ? '' : `<section class="card">
           <h2 class="card__title">${K.title}</h2>
           <p class="card__hint">${K.intro} ${auto ? K.follow : e.email ? 'Plunk isn’t connected yet, so this opens an email for you to send.' : 'They left a number only, so this opens WhatsApp with the link.'}</p>
           <div class="grid-2">
@@ -1424,12 +1428,12 @@
             <button class="btn-primary" data-act="propose">${sent && e.proposal ? 'Send again' : K.send}</button>
             ${e.proposal ? `<a class="link" href="${h(e.proposal)}" target="_blank" rel="noopener">${K.open}</a>` : ''}
           </div>
-        </section>
+        </section>`}
 
         <section class="card">
           <h2 class="card__title">Status</h2>
-          <div class="seg seg--scroll">${each(ENQ_STATUSES, (s) => `<button class="${s === e.status ? 'is-on' : ''}" data-act="setStatus" data-value="${h(s)}">${h(statusName(s, e.form))}</button>`)}</div>
-          <p class="card__hint card__hint--below">${auto ? 'Booked or Not going ahead stops Plunk’s reminders.' : 'Keeps track of where each enquiry is.'}${e.updated ? ` Last changed ${h(ago(e.updated))}${e.updated_by ? ' by ' + h(e.updated_by) : ''}.` : ''}${h(plunkNote(e.plunk))}</p>
+          <div class="seg seg--scroll">${each(ENQ_STATUSES, (s) => `<button class="${s === e.status ? 'is-on' : ''}" data-act="setStatus" data-value="${h(s)}">${h(statusName(s, e))}</button>`)}</div>
+          <p class="card__hint card__hint--below">${partner ? 'Reply to them yourself; nothing is emailed automatically for partnerships.' : auto ? 'Booked or Not going ahead stops Plunk’s reminders.' : 'Keeps track of where each enquiry is.'}${e.updated ? ` Last changed ${h(ago(e.updated))}${e.updated_by ? ' by ' + h(e.updated_by) : ''}.` : ''}${h(plunkNote(e.plunk))}</p>
           ${field('Notes for the team', `<textarea data-k="notes" rows="3" placeholder="Called them, sent a second option…">${h(draft.notes)}</textarea>`)}
           <button class="btn" data-act="notes">Save notes</button>
         </section>`, { back: '#/enquiries' });
@@ -1454,7 +1458,7 @@
       act: {
         setStatus(el) {
           if (el.dataset.value === e.status) return;
-          update({ status: el.dataset.value }, el, (r) => 'Marked as ' + statusName(el.dataset.value, e.form).toLowerCase() + '.' + (r.plunk && /✓/.test(r.plunk) && /Booked|Not going/.test(el.dataset.value) ? ' Plunk stops the reminders.' : ''));
+          update({ status: el.dataset.value }, el, (r) => 'Marked as ' + statusName(el.dataset.value, e).toLowerCase() + '.' + (r.plunk && /✓/.test(r.plunk) && /Booked|Not going/.test(el.dataset.value) ? ' Plunk stops the reminders.' : ''));
         },
         notes(el) { update({ notes: draft.notes }, el, () => 'Notes saved.'); },
         propose(el) {
@@ -1501,6 +1505,7 @@
       mockList = [
         { id: 'EMOCK3', received: t(2), form: 'callback', status: 'New', name: 'Sipho Dlamini', email: '', phone: '+27 82 555 1234', subject: 'WhatsApp callback request: Sipho Dlamini', details: JSON.stringify({ 'Reply by': 'WhatsApp', About: "Hi Fuyamo, I'm interested in Bali 2027", 'Asked from': 'Bali · https://fuyamo.co.za/trips/bali/' }), news: '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: '' },
         { id: 'EMOCK2', received: t(26), form: 'corporate', status: 'New', name: 'Thandi Mokoena', email: 'thandi@example.co.za', phone: '+27 72 123 4567', subject: 'Corporate enquiry: Team retreat · Acme', details: JSON.stringify({ 'Enquiry type': 'Team retreat', 'Company / department': 'Acme', Destination: 'Drakensberg', 'Team size': '24', 'Preferred dates': 'March 2027', Needs: 'Accommodation, Transfers, Team activities', Message: 'Two nights, mid-week.\nVegetarian options please.' }), news: 'Yes', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: 'enquiry_received ✓' },
+        { id: 'EMOCK4', received: t(5), form: 'corporate', status: 'New', name: 'Ayanda Khumalo', email: 'ayanda@example.co.za', phone: '', subject: 'Partnership enquiry · Lodge Co', details: JSON.stringify({ 'Enquiry type': 'Partnerships', 'Company / department': 'Lodge Co', Message: 'We run a lodge in the Drakensberg and would like to host your groups.' }), news: '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: 'enquiry_received ✓' },
         { id: 'EMOCK1', received: t(120), form: 'birthday', status: 'Booked', name: 'Lerato', email: '', phone: '+27 71 000 1111', subject: 'Birthday R500 offer: Lerato (March)', details: JSON.stringify({ 'Birthday month': 'March', 'Trips that month': 'Lesotho (6–8 Mar 2027)' }), news: '', proposal: 'https://app.yamo.travel/t/abc', trip: 'Lesotho', notes: '', updated: t(30), updated_by: 'info@fuyamo.co.za', plunk: '' },
       ];
     }

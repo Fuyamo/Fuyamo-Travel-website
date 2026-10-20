@@ -88,6 +88,8 @@ The script tells [Plunk](https://useplunk.com) about each enquiry that has an em
 
 Workflows in Plunk: **Enquiry reply** (`enquiry_received` → the Enquiry received email) and **Proposal follow-up** (`proposal_sent` → Your proposal, then after 3 days and again after 7 more, a reminder only while the contact's `proposal_status` is still "Proposal sent"; Booked or Not going ahead in the admin stops them), and **Quote follow-up** (`quote_sent` → Your quote, Quote reminder, Quote last follow-up, the same way).
 
+Partnerships: the corporate form's **Partnerships** type (hotels, venues, suppliers, brands and other opportunities) hides the trip fields. In the admin these have no Quote card and their statuses read New, In discussion, Agreed, Not going ahead. They get the thank-you email, and nothing else is emailed automatically.
+
 Corporate quotes: make the PDF, put it in Google Drive (Share → General access: Anyone with the link → Viewer), and paste that link into the enquiry's Quote card.
 
 Use **Transactional** templates for replies and proposals (they reach everyone who enquired) and **Marketing** templates only for trip news (they skip people who didn't tick the box or who unsubscribed). The sheet's Plunk column shows what was sent, or why it failed.

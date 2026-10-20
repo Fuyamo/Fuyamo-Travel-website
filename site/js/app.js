@@ -659,6 +659,9 @@
       document.getElementById('quote-title').textContent = tab.title;
       document.getElementById('quote-sub').textContent = tab.sub;
       document.getElementById('quote-size-label').textContent = tab.sizeLabel;
+      // Partnerships aren't trips: hide destination, team size, dates, budget and "What do you need?".
+      document.querySelectorAll('[data-trip-field]').forEach((el) => { el.hidden = !!tab.partner; });
+      document.getElementById('quote-notes').placeholder = tab.notes || R.QUOTE_NOTES;
       updateQuoteLinks();
     },
 

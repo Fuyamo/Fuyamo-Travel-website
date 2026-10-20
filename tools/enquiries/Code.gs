@@ -29,7 +29,16 @@ const FORMS = { corporate: 'Corporate enquiry', callback: 'Callback request', bi
 // Plunk events sent when the status changes in the dashboard. Corporate enquiries get a PDF quote rather than a Yamo
 // proposal, so "Proposal sent" is quote_sent for them (its own workflow and emails).
 const STATUS_EVENTS = { 'Proposal sent': 'proposal_sent', Booked: 'booked', 'Not going ahead': 'not_going_ahead' };
-const statusEvent = (row) => (row.form === 'corporate' && row.status === 'Proposal sent' ? 'quote_sent' : STATUS_EVENTS[row.status]);
+// Partnerships and opportunities (a corporate form type) aren't quoted, so their status changes email nobody.
+function statusEvent(row) {
+  if (row.form === 'corporate') {
+    let type = '';
+    try { type = JSON.parse(row.details || '{}')['Enquiry type'] || ''; } catch (err) { /* no details */ }
+    if (type === 'Partnerships') return '';
+    if (row.status === 'Proposal sent') return 'quote_sent';
+  }
+  return STATUS_EVENTS[row.status];
+}
 
 // ---------- Web requests ----------
 

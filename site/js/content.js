@@ -190,6 +190,8 @@ window.FUYAMO = (function () {
     { label: 'Conferences & events', title: 'Conferences & events', sub: 'Flights, rooms and transfers for every delegate, timed to your programme.', sizeLabel: 'Number of delegates' },
     { label: 'Public Sector travel', title: 'Public Sector & official travel', sub: 'Compliant, approval-ready quotes with full documentation for your department.', sizeLabel: 'Number of travellers' },
     { label: 'Travel management', title: 'Ongoing travel management', sub: 'One account, one accounts manager and consolidated invoicing for all company travel.', sizeLabel: 'Trips per month' },
+    // Not a trip: the trip fields and "What do you need?" are hidden, and the admin skips the quote for these.
+    { label: 'Partnerships', title: 'Partnerships & opportunities', sub: 'Hotels, venues, tour operators, brands and other businesses: tell us what you have in mind.', sizeLabel: 'Number of travellers', partner: true, notes: 'Tell us about your business and the opportunity…' },
   ];
 
   const CORP_FIELDS = [
@@ -197,10 +199,10 @@ window.FUYAMO = (function () {
     { k: 'company', label: 'Company / department', ph: 'Organisation name', req: true, type: 'text', autocomplete: 'organization' },
     { k: 'email', label: 'Work email', ph: 'you@company.co.za', req: true, type: 'email', autocomplete: 'email' },
     { k: 'phone', label: 'Phone', ph: '+27', req: false, type: 'tel', autocomplete: 'tel' },
-    { k: 'dest', name: 'destination', label: 'Destination', ph: 'e.g. Cape Town, Zanzibar', req: false, type: 'text' },
-    { k: 'size', name: 'group_size', label: 'Team size', ph: 'e.g. 20', req: false, type: 'text' },
-    { k: 'dates', label: 'Preferred dates', ph: 'e.g. 10–15 May 2027', req: false, type: 'text' },
-    { k: 'budget', label: 'Budget per person', ph: 'Optional', req: false, type: 'text' },
+    { k: 'dest', name: 'destination', label: 'Destination', ph: 'e.g. Cape Town, Zanzibar', req: false, type: 'text', trip: true },
+    { k: 'size', name: 'group_size', label: 'Team size', ph: 'e.g. 20', req: false, type: 'text', trip: true },
+    { k: 'dates', label: 'Preferred dates', ph: 'e.g. 10–15 May 2027', req: false, type: 'text', trip: true },
+    { k: 'budget', label: 'Budget per person', ph: 'Optional', req: false, type: 'text', trip: true },
   ];
 
   const CORP_INCLUDES = ['Flights', 'Accommodation', 'Transfers', 'Meals', 'Team activities', 'Venue & conferencing', 'Visa assistance', 'Travel insurance'];
