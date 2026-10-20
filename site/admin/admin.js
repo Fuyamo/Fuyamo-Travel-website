@@ -45,6 +45,7 @@
     if (s < 90) return 'just now';
     if (s < 3600) return Math.round(s / 60) + ' min ago';
     if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    if (s < 1.5 * 86400) return 'yesterday';
     if (s < 7 * 86400) return Math.round(s / 86400) + ' days ago';
     return niceDate(new Date(iso).toISOString());
   }
@@ -81,6 +82,7 @@
     back: '<path d="M15 6l-6 6 6 6"/>',
     file: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/>',
     lock: '<rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    enquiries: '<path d="M3 13l2.5-8h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>',
   };
   const icon = (name, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
   const LOGO = '<span class="logo">fuyam<span class="logo__o"></span></span>';
@@ -474,10 +476,10 @@
   // ---------- Layout, navigation and publish status ----------
 
   const NAV = [
-    ['', 'Overview', 'overview'], ['trips', 'Trips', 'trips'], ['articles', 'Articles', 'articles'], ['photos', 'Photos', 'photos'],
+    ['', 'Overview', 'overview'], ['enquiries', 'Enquiries', 'enquiries'], ['trips', 'Trips', 'trips'], ['articles', 'Articles', 'articles'], ['photos', 'Photos', 'photos'],
     ['faqs', 'FAQs', 'faqs'], ['reviews', 'Reviews', 'reviews'], ['analytics', 'Analytics', 'analytics'], ['settings', 'Settings', 'settings'],
   ];
-  const MOBILE_TABS = ['', 'trips', 'articles', 'photos'];
+  const MOBILE_TABS = ['', 'enquiries', 'trips', 'articles'];
 
   function shell() {
     document.body.className = 'is-app';
@@ -642,6 +644,7 @@
         <a class="quick__item" href="#/photos">${icon('photos')}<span>Change photos</span></a>
         <a class="quick__item" href="${SITE}/" target="_blank" rel="noopener">${icon('external')}<span>View website</span></a>
       </div>
+      <section class="card" id="enq-summary" hidden></section>
       <section class="card" id="ga-summary"></section>
       <div class="grid-2">
         <section class="card">
@@ -656,6 +659,7 @@
           ${commits.length ? `<ul class="rows rows--plain">${each(commits.slice(0, 6), (c) => `<li class="row row--static"><span class="row__text"><strong>${h(c.commit.message.split('\n')[0])}</strong><small>${h(ago(c.commit.author.date))}</small></span></li>`)}</ul>` : '<p class="muted">No changes yet.</p>'}
         </section>
       </div>`);
+    enqSummary();
     gaSummary();
   }
 
@@ -1111,6 +1115,11 @@
   // ---------- Analytics (Google Analytics Data API, with the viewer's Google sign-in) ----------
 
   const GA = { token: '', expires: 0, range: 28, cache: new Map() };
+  const GOOGLE_KEY = 'fuyamo-admin-google';
+  function keepGoogle() {
+    try { if (GA.token) sessionStorage.setItem(GOOGLE_KEY, JSON.stringify({ token: GA.token, expires: GA.expires })); else sessionStorage.removeItem(GOOGLE_KEY); } catch (err) { /* no storage */ }
+  }
+  try { Object.assign(GA, JSON.parse(sessionStorage.getItem(GOOGLE_KEY) || '{}')); } catch (err) { /* no storage */ }
   const gaConfigured = () => !!(S.settings && S.settings.ga && S.settings.ga.property && S.settings.ga.client);
   const gaConnected = () => GA.token && Date.now() < GA.expires;
 
@@ -1123,15 +1132,17 @@
     });
   }
   async function gaConnect() {
+    if (MOCK) { GA.token = 'mock'; GA.expires = Date.now() + 3600e3; return; }
     await loadScript('https://accounts.google.com/gsi/client');
     await new Promise((resolve, reject) => {
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: S.settings.ga.client,
-        scope: 'https://www.googleapis.com/auth/analytics.readonly',
+        scope: 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/userinfo.email',
         callback: (r) => {
           if (r.error) { reject(new Error(r.error_description || r.error)); return; }
           GA.token = r.access_token;
           GA.expires = Date.now() + (r.expires_in - 60) * 1000;
+          keepGoogle();
           resolve();
         },
         error_callback: (e) => reject(new Error(e.message || 'Google sign-in was closed.')),
@@ -1147,7 +1158,7 @@
     });
     const data = await res.json();
     if (!res.ok) {
-      if (res.status === 401) GA.token = '';
+      if (res.status === 401) { GA.token = ''; keepGoogle(); }
       throw new Error(data.error && data.error.message ? data.error.message : 'Google Analytics didn’t answer.');
     }
     const rows = (data.rows || []).map((r) => ({ d: (r.dimensionValues || []).map((v) => v.value), m: r.metricValues.map((v) => +v.value) }));
@@ -1180,8 +1191,8 @@
       <a class="btn" href="#/settings">Set it up in Settings</a>`;
   }
   function gaConnectCard(where) {
-    return `<h2 class="card__title">Visitors</h2><p class="muted">Sign in with the Google account that has your Google Analytics.</p>
-      <button class="btn-primary" data-act="gaConnect" data-where="${where}">Show visitor numbers</button>`;
+    return `<h2 class="card__title">Visitors and enquiries</h2><p class="muted">Sign in with your fuyamo.co.za Google account (info@fuyamo.co.za).</p>
+      <button class="btn-primary" data-act="gaConnect" data-where="${where}">Sign in with Google</button>`;
   }
 
   async function gaSummary() {
@@ -1275,6 +1286,217 @@
     }
   }
 
+  // ---------- Enquiries (the website's forms, kept in a Google Sheet by tools/enquiries/Code.gs) ----------
+
+  const ENQ = { list: null, plunk: false, filter: 'All' };
+  const ENQ_STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
+  const FORM_LABELS = { corporate: 'Corporate', callback: 'Callback', birthday: 'Birthday offer' };
+  const enqConfigured = () => !!(S.settings && S.settings.enquiries && S.settings.enquiries.url && S.settings.ga && S.settings.ga.client);
+  const statusTag = (s) => `<span class="state state--${slugify(s)}">${h(s)}</span>`;
+  const waNumber = (phone) => String(phone || '').replace(/[^\d]/g, '');
+  const firstName = (name) => String(name || '').trim().split(/\s+/)[0];
+  // The sheet's Plunk column ("proposal_sent ✓", or "… ✗ reason") in words.
+  const PLUNK_WORDS = { enquiry_received: 'thank-you email sent', proposal_sent: 'proposal emailed', booked: 'reminders stopped', not_going_ahead: 'reminders stopped' };
+  function plunkNote(p) {
+    const m = String(p || '').match(/^(\w+) (✓|✗)\s*(.*)$/);
+    if (!m) return '';
+    return m[2] === '✓' ? ' Plunk: ' + (PLUNK_WORDS[m[1]] || m[1]) + '.' : ' Plunk couldn’t send: ' + m[3].replace(/\.$/, '') + '.';
+  }
+
+  // Every call carries the Google sign-in; the script checks it's a fuyamo.co.za account.
+  async function enqApi(body) {
+    if (MOCK) return mockEnquiries(body);
+    let data;
+    try {
+      const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ token: GA.token }, body)) });
+      data = await res.json();
+    } catch (err) {
+      throw new Error('Couldn’t reach the enquiries sheet. Check the internet connection and try again.');
+    }
+    if (data.auth) { GA.token = ''; keepGoogle(); }
+    if (!data.ok) throw new Error(data.error || 'The enquiries sheet didn’t answer.');
+    return data;
+  }
+  function parseEnquiry(e) {
+    let details = {};
+    try { details = JSON.parse(e.details || '{}'); } catch (err) { details = {}; }
+    return Object.assign({}, e, { info: details });
+  }
+  async function loadEnquiries() {
+    const data = await enqApi({ action: 'list' });
+    ENQ.list = data.enquiries.map(parseEnquiry);
+    ENQ.plunk = !!data.plunk;
+    return ENQ.list;
+  }
+  // One line about what they asked for.
+  function enqAbout(e) {
+    const d = e.info;
+    const bits = [d['Company / department'], d['Enquiry type'], d['Destination'], d['Birthday month'] && 'Birthday in ' + d['Birthday month'], d['About'] || d['Message']];
+    return bits.filter(Boolean).join(' · ');
+  }
+  const enqRow = (e) => {
+    const when = new Date(e.received);
+    return `<li><a href="#/enquiries/${h(e.id)}" class="row">
+      <span class="row__date"><strong>${when.getDate() || ''}</strong>${MONTHS[when.getMonth()] || ''}</span>
+      <span class="row__text"><strong>${h(e.name)} <em class="tag tag--muted">${h(FORM_LABELS[e.form] || e.form)}</em></strong><small>${h(ago(e.received))} · ${h(enqAbout(e) || e.email || e.phone)}</small></span>
+      ${statusTag(e.status)}${icon('chevron', 18)}</a></li>`;
+  };
+  function googleCard(where, title) {
+    return `<h2 class="card__title">${h(title)}</h2><p class="muted">Sign in with your fuyamo.co.za Google account (info@fuyamo.co.za).</p>
+      <button class="btn-primary" data-act="gaConnect" data-where="${where}">Sign in with Google</button>`;
+  }
+  const enqNotReady = () => `<section class="card"><h2 class="card__title">Enquiries</h2><p class="muted">The enquiries sheet isn’t connected yet. See “Enquiries” in the README.</p></section>`;
+
+  async function enquiriesList() {
+    page('Enquiries', loading());
+    await ensure('settings');
+    if (!enqConfigured()) { page('Enquiries', enqNotReady()); return; }
+    if (!gaConnected()) { page('Enquiries', `<section class="card">${googleCard('enquiries', 'Enquiries')}</section>`); return; }
+    const list = await loadEnquiries();
+    const count = (s) => (s === 'All' ? list.length : list.filter((e) => e.status === s).length);
+    const draw = () => {
+      const shown = ENQ.filter === 'All' ? list : list.filter((e) => e.status === ENQ.filter);
+      const seg = `<div class="seg seg--scroll">${each(['All', 'New', 'Proposal sent', 'Booked'], (s) => `<button class="${s === ENQ.filter ? 'is-on' : ''}" data-act="filter" data-value="${h(s)}">${h(s)} <span class="seg__n">${count(s)}</span></button>`)}</div>`;
+      page('Enquiries', `${seg}
+        <section class="card">${shown.length ? `<ul class="rows">${each(shown, enqRow)}</ul>`
+          : `<p class="muted">${list.length ? 'Nothing here.' : 'No enquiries yet. New ones from the website’s forms appear here.'}</p>`}</section>
+        ${ENQ.plunk ? '' : '<p class="card__hint">Plunk isn’t connected yet, so customers don’t get automatic emails. Everything else works.</p>'}`,
+      { actions: `<button class="btn" data-act="refresh">Refresh</button>` });
+    };
+    V = { act: { filter(el) { ENQ.filter = el.dataset.value; draw(); }, refresh: () => enquiriesList() }, redraw: draw };
+    draw();
+  }
+
+  async function enquiryView(id) {
+    page('Enquiry', loading(), { back: '#/enquiries' });
+    await ensure('settings', 'trips');
+    if (!enqConfigured()) { page('Enquiry', enqNotReady(), { back: '#/enquiries' }); return; }
+    if (!gaConnected()) { page('Enquiry', `<section class="card">${googleCard('enquiries', 'Enquiry')}</section>`, { back: '#/enquiries' }); return; }
+    if (!ENQ.list || !ENQ.list.some((e) => e.id === id)) await loadEnquiries();
+    const e = ENQ.list.find((x) => x.id === id);
+    if (!e) { page('Enquiry', '<section class="card"><p class="muted">That enquiry wasn’t found.</p></section>', { back: '#/enquiries' }); return; }
+    const draft = { proposal: e.proposal, trip: e.trip || e.info['Destination'] || '', notes: e.notes };
+    const wa = waNumber(e.phone);
+    const proposalText = () => `Hi ${firstName(e.name)}, here's your trip proposal from Fuyamo Travel${draft.trip ? ': ' + draft.trip : ''}.\n${draft.proposal}`;
+    const mailto = (subject, body) => `mailto:${encodeURIComponent(e.email)}?subject=${encodeURIComponent(subject)}${body ? '&body=' + encodeURIComponent(body) : ''}`;
+    const auto = ENQ.plunk && e.email;
+
+    const draw = () => {
+      const d = Object.entries(e.info).filter(([k]) => k !== 'Start the chat');
+      const sent = e.status !== 'New';
+      page(e.name, `
+        <section class="card">
+          <div class="card__head"><h2 class="card__title">${h(FORM_LABELS[e.form] || e.form)} ${statusTag(e.status)}</h2><small class="muted">${h(niceDate(e.received))} · ${h(ago(e.received))}</small></div>
+          <div class="contact">
+            ${e.email ? `<a class="btn" href="${h(mailto('Re: ' + e.subject))}">Email ${h(e.email)}</a>` : ''}
+            ${wa ? `<a class="btn" href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp ${h(e.phone)}</a>` : ''}
+            ${e.phone ? `<a class="btn" href="tel:${h(e.phone.replace(/[^\d+]/g, ''))}">Call</a>` : ''}
+          </div>
+          ${d.length ? `<dl class="facts">${each(d, ([k, v]) => `<div><dt>${h(k)}</dt><dd>${/^https?:\/\//.test(v) ? `<a href="${h(v)}" target="_blank" rel="noopener">${h(v.replace(/^https?:\/\//, ''))}</a>` : h(v).replace(/\n/g, '<br>')}</dd></div>`)}</dl>` : ''}
+          ${e.news === 'Yes' ? '<p class="card__hint">They asked for trip news by email.</p>' : ''}
+        </section>
+
+        <section class="card">
+          <h2 class="card__title">Proposal</h2>
+          <p class="card__hint">Build the trip on Yamo, then paste its link here. ${auto ? 'Plunk emails it to them and follows up until they book.' : e.email ? 'Plunk isn’t connected yet, so this opens an email for you to send.' : 'They left a number only, so this opens WhatsApp with the link.'}</p>
+          <div class="grid-2">
+            ${field('Trip', `<input data-k="trip" value="${h(draft.trip)}" placeholder="e.g. Drakensberg team retreat">`)}
+            ${field('Yamo link', `<input data-k="proposal" type="url" value="${h(draft.proposal)}" placeholder="https://app.yamo.travel/…">`)}
+          </div>
+          <div class="btn-row">
+            <button class="btn-primary" data-act="propose">${sent && e.proposal ? 'Send again' : 'Send proposal'}</button>
+            ${e.proposal ? `<a class="link" href="${h(e.proposal)}" target="_blank" rel="noopener">Open on Yamo</a>` : ''}
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="card__title">Status</h2>
+          <div class="seg seg--scroll">${each(ENQ_STATUSES, (s) => `<button class="${s === e.status ? 'is-on' : ''}" data-act="setStatus" data-value="${h(s)}">${h(s)}</button>`)}</div>
+          <p class="card__hint card__hint--below">${auto ? 'Booked or Not going ahead stops Plunk’s reminders.' : 'Keeps track of where each enquiry is.'}${e.updated ? ` Last changed ${h(ago(e.updated))}${e.updated_by ? ' by ' + h(e.updated_by) : ''}.` : ''}${h(plunkNote(e.plunk))}</p>
+          ${field('Notes for the team', `<textarea data-k="notes" rows="3" placeholder="Called them, sent a second option…">${h(draft.notes)}</textarea>`)}
+          <button class="btn" data-act="notes">Save notes</button>
+        </section>`, { back: '#/enquiries' });
+    };
+
+    const update = async (changes, button, done) => {
+      const label = button.textContent;
+      button.disabled = true; button.textContent = 'Saving…';
+      try {
+        const r = await enqApi(Object.assign({ action: 'update', id: e.id }, changes));
+        Object.assign(e, parseEnquiry(r.enquiry));
+        draw();
+        toast(done(r));
+      } catch (err) {
+        toast(err.message, 'error');
+        button.disabled = false; button.textContent = label;
+      }
+    };
+    V = {
+      redraw: draw,
+      fields: draft,
+      act: {
+        setStatus(el) {
+          if (el.dataset.value === e.status) return;
+          update({ status: el.dataset.value }, el, (r) => 'Marked as ' + el.dataset.value.toLowerCase() + '.' + (r.plunk && /✓/.test(r.plunk) && /Booked|Not going/.test(el.dataset.value) ? ' Plunk stops the reminders.' : ''));
+        },
+        notes(el) { update({ notes: draft.notes }, el, () => 'Notes saved.'); },
+        propose(el) {
+          if (!/^https:\/\/\S+$/.test(draft.proposal)) { toast('Paste the trip’s Yamo link first (it starts with https://).', 'error'); $('[data-k="proposal"]').focus(); return; }
+          const again = e.status !== 'New' && e.proposal;
+          // Without Plunk, open the message for them to send themselves (opened now, while it still counts as a tap).
+          if (!auto) {
+            if (e.email) location.href = mailto('Your trip proposal from Fuyamo Travel', proposalText() + '\n\nAny questions, just reply to this email.\n\nFuyamo Travel');
+            else if (wa) window.open('https://wa.me/' + wa + '?text=' + encodeURIComponent(proposalText()), '_blank', 'noopener');
+          }
+          update({ status: 'Proposal sent', proposal: draft.proposal, trip: draft.trip, resend: !!again }, el,
+            (r) => (auto ? (/✓/.test(r.plunk || '') ? 'Proposal sent. Plunk emailed ' + e.email + '.' : 'Saved, but Plunk didn’t send it.' + plunkNote(r.plunk)) : 'Marked as proposal sent.'));
+        },
+      },
+    };
+    draw();
+  }
+  // The enquiry's fields aren't part of a saved file, so they fill the view's own draft (no "Unsaved changes" bar).
+  document.addEventListener('input', (ev) => {
+    const k = ev.target.dataset && ev.target.dataset.k;
+    if (k && V.fields) V.fields[k] = ev.target.value;
+  });
+
+  // The overview's "New enquiries" card, once signed in to Google.
+  async function enqSummary() {
+    const box = $('#enq-summary');
+    if (!box) return;
+    await ensure('settings').catch(() => {});
+    if (!enqConfigured() || !gaConnected()) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = '<h2 class="card__title">New enquiries</h2>' + loading();
+    try {
+      const fresh = (await loadEnquiries()).filter((e) => e.status === 'New');
+      box.innerHTML = `<div class="card__head"><h2 class="card__title">New enquiries${fresh.length ? ` <span class="count">${fresh.length}</span>` : ''}</h2><a href="#/enquiries" class="link">All enquiries →</a></div>
+        ${fresh.length ? `<ul class="rows">${each(fresh.slice(0, 5), enqRow)}</ul>` : '<p class="muted">You’re all caught up.</p>'}`;
+    } catch (err) { box.innerHTML = `<h2 class="card__title">New enquiries</h2><p class="muted">${h(err.message)}</p>`; }
+  }
+
+  // Test mode (?mock): a few made-up enquiries, kept in memory.
+  let mockList = null;
+  function mockEnquiries(body) {
+    if (!mockList) {
+      const t = (h) => new Date(Date.now() - h * 3600e3).toISOString();
+      mockList = [
+        { id: 'EMOCK3', received: t(2), form: 'callback', status: 'New', name: 'Sipho Dlamini', email: '', phone: '+27 82 555 1234', subject: 'WhatsApp callback request: Sipho Dlamini', details: JSON.stringify({ 'Reply by': 'WhatsApp', About: "Hi Fuyamo, I'm interested in Bali 2027", 'Asked from': 'Bali · https://fuyamo.co.za/trips/bali/' }), news: '', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: '' },
+        { id: 'EMOCK2', received: t(26), form: 'corporate', status: 'New', name: 'Thandi Mokoena', email: 'thandi@example.co.za', phone: '+27 72 123 4567', subject: 'Corporate enquiry: Team retreat · Acme', details: JSON.stringify({ 'Enquiry type': 'Team retreat', 'Company / department': 'Acme', Destination: 'Drakensberg', 'Team size': '24', 'Preferred dates': 'March 2027', Needs: 'Accommodation, Transfers, Team activities', Message: 'Two nights, mid-week.\nVegetarian options please.' }), news: 'Yes', proposal: '', trip: '', notes: '', updated: '', updated_by: '', plunk: 'enquiry_received ✓' },
+        { id: 'EMOCK1', received: t(120), form: 'birthday', status: 'Booked', name: 'Lerato', email: '', phone: '+27 71 000 1111', subject: 'Birthday R500 offer: Lerato (March)', details: JSON.stringify({ 'Birthday month': 'March', 'Trips that month': 'Lesotho (6–8 Mar 2027)' }), news: '', proposal: 'https://app.yamo.travel/t/abc', trip: 'Lesotho', notes: '', updated: t(30), updated_by: 'info@fuyamo.co.za', plunk: '' },
+      ];
+    }
+    if (body.action === 'list') return Promise.resolve({ ok: true, enquiries: clone(mockList), plunk: !new URLSearchParams(location.search).has('noplunk') });
+    const row = mockList.find((x) => x.id === body.id);
+    const changed = body.status && body.status !== row.status;
+    ['status', 'proposal', 'trip', 'notes'].forEach((k) => { if (body[k] !== undefined) row[k] = body[k]; });
+    row.updated = new Date().toISOString(); row.updated_by = 'info@fuyamo.co.za';
+    const plunk = (changed || body.resend) && row.email ? ({ 'Proposal sent': 'proposal_sent', Booked: 'booked', 'Not going ahead': 'not_going_ahead' }[row.status] || '') + ' ✓' : '';
+    if (plunk) row.plunk = plunk;
+    return new Promise((resolve) => setTimeout(() => resolve({ ok: true, enquiry: clone(row), plunk }), 300));
+  }
+
   // ----- Settings -----
 
   async function settingsView() {
@@ -1318,6 +1540,14 @@
           <li>Copy the client ID it shows and paste it above.</li></ol></details>
       </section>
       <section class="card">
+        <h2 class="card__title">Enquiries</h2>
+        <p class="card__hint">The website’s forms are saved in the “Fuyamo website enquiries” Google Sheet by a small Google script. This is its web app address (Apps Script → Deploy → Manage deployments).</p>
+        <form data-form="enq" class="grid-2">
+          ${field('Enquiries script address', `<input name="url" type="url" value="${h(((S.settings && S.settings.enquiries) || {}).url || '')}" placeholder="https://script.google.com/macros/s/…/exec">`)}
+          <div><button class="btn-primary" type="submit">Save</button></div>
+        </form>
+      </section>
+      <section class="card">
         <h2 class="card__title">This device</h2>
         <button class="btn" data-act="signout">${icon('out', 16)} Sign out</button>
       </section>`);
@@ -1348,7 +1578,12 @@
       const ga = { property: f.property.trim().replace(/^properties\//, ''), client: f.client.trim() };
       if (ga.property && !/^\d+$/.test(ga.property)) { toast('The property ID is a number, like 456789123 (not the G- measurement ID).', 'error'); return; }
       const settings = Object.assign({}, S.settings, { ga });
-      if (await save([{ path: SETTINGS_PATH, text: json(settings) }], 'Admin: Google Analytics settings', btn)) { S.settings = settings; GA.token = ''; }
+      if (await save([{ path: SETTINGS_PATH, text: json(settings) }], 'Admin: Google Analytics settings', btn)) { S.settings = settings; GA.token = ''; keepGoogle(); }
+    } else if (form.dataset.form === 'enq') {
+      const url = f.url.trim();
+      if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) { toast('That doesn’t look like an Apps Script web app address (…/exec).', 'error'); return; }
+      const settings = Object.assign({}, S.settings, { enquiries: { url } });
+      if (await save([{ path: SETTINGS_PATH, text: json(settings) }], 'Admin: enquiries settings', btn)) { S.settings = settings; ENQ.list = null; }
     }
   }
 
@@ -1413,7 +1648,7 @@
 
   function signOut() {
     forget();
-    S.token = ''; S.user = null; GA.token = '';
+    S.token = ''; S.user = null; GA.token = ''; keepGoogle(); ENQ.list = null;
     ['trips', 'photos', 'faqs', 'reviews', 'posts', 'settings', 'library'].forEach((k) => { S[k] = null; });
     S.dirty = false;
     location.hash = '';
@@ -1423,7 +1658,7 @@
   // ---------- Routing ----------
 
   const ROUTES = [
-    [/^$/, overview], [/^trips$/, tripsList], [/^trips\/new$/, () => tripEdit(null)], [/^trips\/([\w-]+)$/, (m) => tripEdit(m[1])],
+    [/^$/, overview], [/^enquiries$/, enquiriesList], [/^enquiries\/([\w-]+)$/, (m) => enquiryView(m[1])], [/^trips$/, tripsList], [/^trips\/new$/, () => tripEdit(null)], [/^trips\/([\w-]+)$/, (m) => tripEdit(m[1])],
     [/^articles$/, postsList], [/^articles\/new$/, () => postEdit(null)], [/^articles\/([\w-]+)$/, (m) => postEdit(m[1])],
     [/^photos$/, photosView], [/^faqs$/, faqsView], [/^reviews$/, reviewsView], [/^analytics$/, analyticsView], [/^settings$/, settingsView],
   ];
@@ -1471,7 +1706,7 @@
     if (name === 'status') { statusDetails(); return; }
     if (name === 'gaConnect') {
       try { await gaConnect(); } catch (err) { toast(err.message, 'error'); return; }
-      if (el.dataset.where === 'analytics') analyticsView(); else gaSummary();
+      if (el.dataset.where === 'overview') { enqSummary(); gaSummary(); } else route();
       return;
     }
     if (name === 'range') { GA.range = +el.dataset.days; analyticsView(); return; }

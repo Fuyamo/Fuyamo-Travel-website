@@ -139,19 +139,16 @@
     form.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  // Sends a form's details to the Fuyamo inbox through FormSubmit; throws if it didn't go through.
+  // Sends a form's details to the Fuyamo enquiries script (saved, emailed to info@); throws if it didn't go through.
+  // Sent as plain text so the browser makes a simple request that Google answers directly.
   async function sendToInbox(data) {
-    const res = await fetch(C.SITE.forms.ajax, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(data),
-    });
+    const res = await fetch(C.SITE.forms.endpoint, { method: 'POST', body: JSON.stringify(data) });
     const reply = await res.json().catch(() => ({}));
-    if (!res.ok || String(reply.success) !== 'true') throw new Error(reply.message || 'HTTP ' + res.status);
+    if (!res.ok || reply.ok !== true) throw new Error(reply.error || 'HTTP ' + res.status);
   }
 
   // Sends the enquiry form in the background so the visitor stays on the page. Without JavaScript the form
-  // still posts normally and FormSubmit brings them back to corporate/?sent=1.
+  // still posts normally, and the script shows a thank-you page with a link back to corporate/?sent=1.
   async function sendQuote(e) {
     e.preventDefault();
     const form = e.currentTarget, btn = document.getElementById('quote-submit'), label = btn.querySelector('.send-btn__label');
@@ -160,7 +157,7 @@
     btn.disabled = true;
     label.textContent = 'Sending…';
     try {
-      await sendToInbox(Object.assign(R.quoteSubmission(state.quote), { _honey: form.elements._honey.value }));
+      await sendToInbox(Object.assign(R.quoteSubmission(state.quote), { _honey: form.elements._honey.value, _news: form.elements._news.checked }));
       showQuoteSent();
     } catch (err) {
       error.hidden = false;
@@ -194,6 +191,7 @@
     cbEl('callback-email-field').hidden = !email;
     form.elements.whatsapp.disabled = email;
     form.elements.email.disabled = !email;
+    cbEl('callback-news').hidden = !email; // trip news goes by email, so it's only offered with an email address
     if (!cb.plan) cbEl('callback-title').textContent = email ? "We'll email you" : "We'll WhatsApp you";
     placeCallback();
   }
@@ -303,12 +301,12 @@
     const form = e.currentTarget, btn = cbEl('callback-send'), byEmail = cb.method === 'email';
     const name = form.elements.name.value.trim(), number = normaliseNumber(form.elements.whatsapp.value);
     const data = {
+      _form: 'callback',
       _subject: (byEmail ? 'Email' : 'WhatsApp') + ' callback request: ' + name + (cb.plan ? ' · ' + cb.plan : ''),
-      _template: 'table',
       name,
       'Reply by': byEmail ? 'Email' : 'WhatsApp',
     };
-    if (byEmail) data.email = form.elements.email.value.trim();
+    if (byEmail) { data.email = form.elements.email.value.trim(); data._news = form.elements._news.checked; }
     else { data['WhatsApp'] = prettyNumber(number); data['Start the chat'] = 'https://wa.me/' + number.slice(1); }
     if (form.elements.message.value.trim()) data['Message'] = form.elements.message.value.trim();
     if (cb.context) data['About'] = cb.context;
@@ -454,8 +452,8 @@
     btn.textContent = 'Sending…';
     try {
       await sendToInbox({
+        _form: 'birthday',
         _subject: 'Birthday R500 offer: ' + name + ' (' + monthName + ')',
-        _template: 'table',
         name,
         'Birthday month': monthName,
         'WhatsApp': prettyNumber(number),

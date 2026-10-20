@@ -969,6 +969,10 @@ html[data-ab="1"] .ab-1 { display: inline; }
 .callback__title { margin: 0; font: 600 18px/1.2 var(--sans); letter-spacing: -.02em; }
 .callback__sub { margin: 0; font: 400 13.5px/1.4 var(--sans); color: #5A564E; }
 .callback__field { display: block; }
+/* "Email me trip news and offers": a small optional tick box on the forms */
+.consent { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: rgba(17, 17, 17, .72); cursor: pointer; }
+.consent[hidden] { display: none; }
+.consent input { width: 16px; height: 16px; margin: 0; flex: none; accent-color: var(--ink); }
 .callback__field input, .callback__field textarea { all: unset; box-sizing: border-box; width: 100%; font: 400 15px/1.3 var(--sans); color: var(--ink); background: #fff; border: 1.5px solid #E2DED6; border-radius: 12px; padding: 11px 13px; }
 .callback__field textarea { min-height: 72px; white-space: pre-wrap; }
 .callback__field input::placeholder, .callback__field textarea::placeholder { color: #9A958C; }

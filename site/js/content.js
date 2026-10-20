@@ -20,9 +20,9 @@ window.FUYAMO = (function () {
     phone: '+27722415151',
     phoneDisplay: '072 241 5151',
     email: 'info@fuyamo.co.za',
-    // The corporate enquiry form and the "leave your number" card post to FormSubmit, which emails each one to
-    // the address above. The very first one triggers a one-time "Activate form" email to that inbox: click it once.
-    forms: { post: 'https://formsubmit.co/info@fuyamo.co.za', ajax: 'https://formsubmit.co/ajax/info@fuyamo.co.za' },
+    // The website's forms post to the Google script in tools/enquiries/Code.gs. It saves each one in the
+    // "Fuyamo website enquiries" Google Sheet, emails the address above and tells Plunk (see the README).
+    forms: { endpoint: 'https://script.google.com/macros/s/AKfycbyPq_duz3U-vs3mpuZnm99d7OBMBjgRLygfrGGw6Ql2x7rgtMZgSUoXiiiWmfjmyOvbBA/exec' },
     // Office address, as listed on the Google Business Profile (map opens that listing).
     address: {
       street: '3 Bauhinia St', area: 'Highveld Techno Park', city: 'Centurion', postcode: '0157',
@@ -233,7 +233,7 @@ window.FUYAMO = (function () {
   // bullet points, and [text](address) becomes a link. Change `updated` whenever the wording changes.
   const A = SITE.address;
   const PRIVACY = {
-    updated: '2026-10-19',
+    updated: '2026-10-20',
     intro: 'This notice explains what personal information Fuyamo Travel collects through this website and when you book with us, why we need it, and your rights under the Protection of Personal Information Act (POPIA).',
     sections: [
       ['Who we are', [
@@ -258,13 +258,13 @@ window.FUYAMO = (function () {
       ['Who we share it with', [[
         'Travel suppliers such as airlines, hotels, transfer and activity companies and insurers, when your booking needs it.',
         'Yamo, when you reserve or pay in the Yamo app. Yamo’s own privacy policy applies there.',
-        'FormSubmit, which delivers the messages from this website’s forms to our inbox.',
-        'Google, which provides Google Analytics.',
+        'Google, which stores the messages from this website’s forms in our Google Workspace account and provides Google Analytics.',
+        'Plunk, which sends our emails about your enquiry and, if you ask for them, trip news. Every trip news email has an unsubscribe link.',
       ],
       'We never sell your personal information.',
       ]],
       ['Information sent outside South Africa', [
-        'Some of these services, including FormSubmit and Google, store information outside South Africa, and international trips mean sharing your details with suppliers abroad. We only do this with services that protect personal information to a standard similar to POPIA, or when it’s needed for the trip you booked.',
+        'Some of these services, including Google and Plunk, store information outside South Africa, and international trips mean sharing your details with suppliers abroad. We only do this with services that protect personal information to a standard similar to POPIA, or when it’s needed for the trip you booked.',
       ]],
       ['Cookies', [
         'Google Analytics uses cookies (named _ga) to count visits and see which pages and buttons are used. This website also saves two small settings in your browser: whether you closed the birthday offer, and which wording of the booking button you see. We don’t use advertising cookies. You can clear or block cookies in your browser’s settings.',

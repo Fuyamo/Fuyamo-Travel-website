@@ -41,7 +41,7 @@ The old WordPress site was backed up (`backup-10.19.2026_14-58-08_fuyamamk.tar.g
 
 ## After launch
 
-1. **Activate the forms:** send one enquiry from the live site, then click "Activate Form" in the email FormSubmit sends to info@fuyamo.co.za. Then test the corporate form, the "Leave your number" card and the birthday popup (`fuyamo.co.za/?offer`).
+1. **Test the forms:** send the corporate form, the "Leave your number" card and the birthday popup (`fuyamo.co.za/?offer`). Each should arrive at info@fuyamo.co.za and in the admin under Enquiries.
 2. Open Google Analytics → **Reports → Realtime** and check that your own visit shows up.
 3. Add the site to Google Search Console and submit `https://fuyamo.co.za/sitemap.xml` (see "Search engines" below).
 4. On your phone, open a trip and check three things: "Reserve seat" opens the right Yamo trip, "Trip details" downloads the PDF, and Share works.
@@ -59,15 +59,33 @@ Articles are Markdown files in `posts/`. `tools/post-template.md` shows the form
 
 ## Enquiry form, "Leave your number" card and birthday popup
 
-Three things on the site send enquiries to info@fuyamo.co.za through [FormSubmit](https://formsubmit.co), a free form-to-email service, so no server is needed:
+Three things on the site send enquiries. Each one is saved in the **Fuyamo website enquiries** Google Sheet (in info@fuyamo.co.za's Drive), emailed to info@fuyamo.co.za (Reply goes straight to the customer) and listed in the admin under **Enquiries**:
 
 - **The Corporate page enquiry form.** If sending fails, the "Email us instead" button opens the visitor's email app with the enquiry already written.
 - **The "Leave your number" card.** It opens from the WhatsApp buttons (menu, floating button, Contact page cards and similar) and from the home search when someone types a place we don't run a trip to. Visitors leave their name and a WhatsApp number or email. The email you receive includes the page they were on and a "Start the chat" link that opens WhatsApp with them. If JavaScript is off, those buttons open WhatsApp directly as before.
 - **The birthday offer popup.** "Travel on your birthday. Get R500 off." asks for a birthday month, name and WhatsApp number, then lists the trips departing that month. It appears once, after someone has browsed for a bit (not on the Corporate or Contact pages). After "No thanks" it stays away for 14 days, and once claimed it doesn't come back. Add `?offer` to any address (e.g. `fuyamo.co.za/?offer`) to open it straight away, which is handy for social posts.
 
-**Before launch, activate it once.** Send one test from the live site. FormSubmit then emails an "Activate Form" link to info@fuyamo.co.za. Click it, and everything is delivered from then on. Anything sent before activation isn't delivered.
+The corporate form and the email option of the "Leave your number" card have an optional **Email me trip news and offers** tick box. Only people who tick it are subscribed to Plunk's marketing emails (POPIA).
 
-To use a different inbox, change `forms` in `SITE` in `content.js` and publish. FormSubmit asks the new inbox to activate again.
+### How it works
+
+- **The script:** `tools/enquiries/Code.gs` runs in Google Apps Script, attached to the sheet (Extensions → Apps Script, project "Fuyamo enquiries", running as info@fuyamo.co.za). The website posts to its web app address, which is `forms.endpoint` in `content.js` and `enquiries.url` in `admin/settings.json`. To change the script, paste the new Code.gs into the editor, then Deploy → Manage deployments → edit (pencil) → Version: **New version** → Deploy. The address stays the same.
+- **Spam:** a hidden field catches simple bots, and more than 30 messages in 10 minutes are refused.
+- **In the admin:** Enquiries lists everything, newest first. Open one to email, WhatsApp or call them, paste the Yamo link of the trip you built and press **Send proposal**, set the status (New, Proposal sent, Booked, Not going ahead) and keep notes. It uses the same Google sign-in as Analytics, and only fuyamo.co.za accounts get in.
+- **The sheet itself** can be opened, sorted and filtered like any spreadsheet. Don't rename the Enquiries tab or reorder its columns.
+
+### Plunk (emails to customers)
+
+The script tells [Plunk](https://useplunk.com) about each enquiry that has an email address, and about status changes, as events. Plunk's workflows then send the emails. It uses Plunk's public key (`pk_…`, the only key Plunk's event endpoint accepts), stored as the script property `PLUNK_PUBLIC_KEY` (Apps Script → Project Settings → Script properties). It's kept there rather than on the website, so nobody else can fire Fuyamo's events.
+
+| Event | When | Data for the email (`{{ name }}` etc.) |
+|---|---|---|
+| `enquiry_received` | A form with an email address arrives (at most once per address every 6 hours) | `name`, `first_name`, `enquiry_type`, `enquiry_about` |
+| `proposal_sent` | **Send proposal** in the admin | `name`, `first_name`, `trip`, `proposal_link` |
+| `booked` | Status set to Booked | same |
+| `not_going_ahead` | Status set to Not going ahead | same |
+
+Use **Transactional** templates for replies and proposals (they reach everyone who enquired) and **Marketing** templates only for trip news (they skip people who didn't tick the box or who unsubscribed). The sheet's Plunk column shows what was sent, or why it failed.
 
 ## Button test: "Reserve seat" or "Secure seat"
 

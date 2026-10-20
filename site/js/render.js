@@ -236,6 +236,7 @@ window.FUYAMO_RENDER = (function (C) {
       <button type="button" class="callback__link" data-action="callback-more" aria-expanded="false" aria-controls="callback-message-field">+ Add a message</button>
       <button type="button" class="callback__link" data-action="callback-method" id="callback-switch">Use email instead</button>
     </div>
+    <label class="consent" id="callback-news" hidden><input type="checkbox" name="_news"><span>Email me trip news and offers</span></label>
     <input type="text" name="_honey" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true">
     <button type="submit" class="callback__send" id="callback-send">Send</button>
     <p class="callback__error" id="callback-error" role="alert" hidden>Didn't send. Try again or <a href="${WA.general}" ${EXT} id="callback-fallback">open WhatsApp</a>.</p>
@@ -808,13 +809,13 @@ window.FUYAMO_RENDER = (function (C) {
     return lines.join('\n');
   }
 
-  // What the enquiry form sends to FormSubmit: readable labels for the email, with "name" and "email" kept as-is
-  // so replies go straight to the person who asked.
+  // What the enquiry form sends: readable labels for the email and the dashboard, with "name", "email" and "phone"
+  // kept as-is so replies go straight to the person who asked.
   function quoteSubmission(q) {
     const tab = C.CORP_TABS[q.tab];
-    const data = { _subject: 'Corporate enquiry: ' + tab.label + (q.company ? ' · ' + q.company : ''), _template: 'table', 'Enquiry type': tab.label };
+    const data = { _form: 'corporate', _subject: 'Corporate enquiry: ' + tab.label + (q.company ? ' · ' + q.company : ''), 'Enquiry type': tab.label };
     C.CORP_FIELDS.forEach((f) => {
-      if (q[f.k]) data[f.k === 'name' || f.k === 'email' ? f.k : f.k === 'size' ? tab.sizeLabel : f.label] = q[f.k];
+      if (q[f.k]) data[['name', 'email', 'phone'].includes(f.k) ? f.k : f.k === 'size' ? tab.sizeLabel : f.label] = q[f.k];
     });
     const inc = C.CORP_INCLUDES.filter((k) => q.inc.has(k)).join(', ');
     if (inc) data['Needs'] = inc;
@@ -876,10 +877,9 @@ window.FUYAMO_RENDER = (function (C) {
       <section class="quote" id="enquire">
         <div class="center-head"><h2 class="title-lg">Tell us what you need.</h2></div>
         <div class="pills quote__tabs">${each(C.CORP_TABS, (t, i) => `<button class="pill${i === q.tab ? ' is-on' : ''}" data-action="quote-tab" data-index="${i}" aria-pressed="${i === q.tab}">${esc(t.label)}</button>`)}</div>
-        <form class="quote__card" id="quote-form" action="${esc(SITE.forms.post)}" method="POST">
+        <form class="quote__card" id="quote-form" action="${esc(SITE.forms.endpoint)}" method="POST">
+          <input type="hidden" name="_form" value="corporate">
           <input type="hidden" name="_subject" id="quote-subject" value="${esc('Corporate enquiry: ' + tab.label)}">
-          <input type="hidden" name="_template" value="table">
-          <input type="hidden" name="_next" value="${esc(SITE.url + '/' + PAGES.corporate.path + '?sent=1#enquire')}">
           <input type="hidden" name="enquiry_type" id="quote-type" value="${esc(tab.label)}">
           <input type="hidden" name="needs" id="quote-include" value="${esc(C.CORP_INCLUDES.filter((k) => q.inc.has(k)).join(', '))}">
           <input type="text" name="_honey" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -898,6 +898,7 @@ window.FUYAMO_RENDER = (function (C) {
             })}</div>
           </div>
           <label class="field"><span class="field__label">TELL US MORE</span><textarea name="message" data-quote="notes" rows="4" placeholder="Who's travelling, when, approvals needed, or any questions…"></textarea></label>
+          <label class="consent"><input type="checkbox" name="_news" value="yes"><span>Email me trip news and offers</span></label>
           <div class="quote__actions">
             <button type="submit" class="send-btn" id="quote-submit"><span class="send-btn__label">Send enquiry</span><span aria-hidden="true">→</span></button>
             <a href="${quoteEmail(q)}" class="btn-email" id="quote-email">Email us instead</a>

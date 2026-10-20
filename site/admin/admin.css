@@ -345,3 +345,26 @@ textarea { resize: vertical; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Enquiries ---------- */
+.state { flex-shrink: 0; display: inline-block; padding: 4px 9px; border-radius: 999px; font: 600 11.5px/1 var(--sans); background: var(--paper); color: var(--muted); white-space: nowrap; vertical-align: 2px; }
+.card__title .state { margin-left: 6px; }
+.state--new { background: var(--amber); color: var(--ink); }
+.state--proposal-sent { background: var(--ink); color: #fff; }
+.state--booked { background: #E3F1E9; color: var(--green); }
+.seg--scroll { display: flex; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin-bottom: 14px; }
+.seg--scroll::-webkit-scrollbar { display: none; }
+.seg--scroll button { white-space: nowrap; flex-shrink: 0; }
+.seg__n { font-weight: 500; opacity: .6; margin-left: 2px; }
+.count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--amber); font: 600 12px/1 var(--sans); vertical-align: 2px; }
+.contact { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+.contact .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.facts { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; }
+.facts div { min-width: 0; }
+.facts dt { font: 500 10.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 699.98px) { .facts { grid-template-columns: minmax(0, 1fr); } }
+.btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.card__hint--below { margin: 0 0 14px; }
+.facts + .card__hint { margin: 14px 0 0; }
+.rows .row__text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
