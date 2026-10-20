@@ -143,22 +143,76 @@ function receive(body) {
   return { ok: true, id: row.id };
 }
 
-// The email to info@: the details in a table, a WhatsApp link for numbers, and Reply goes to the customer.
+// The email to info@: who it is and what they want at the top, one-tap buttons for the way they asked to be
+// contacted (Reply goes straight to them too), then the rest of the details. Email-safe: tables and inline styles.
 function notify(row, details) {
+  const d = Object.assign({}, details);
+  const first = row.name.split(' ')[0];
   const wa = row.phone ? 'https://wa.me/' + row.phone.replace(/[^\d]/g, '') : '';
-  const lines = [['Name', esc(row.name)]];
-  if (row.email) lines.push(['Email', '<a href="mailto:' + esc(row.email) + '">' + esc(row.email) + '</a>']);
-  if (row.phone) lines.push(['Phone', esc(row.phone) + (wa ? ' · <a href="' + esc(wa) + '">WhatsApp them</a>' : '')]);
-  Object.keys(details).forEach((k) => { if (k !== 'Start the chat') lines.push([esc(k), esc(details[k]).replace(/\n/g, '<br>')]); });
-  if (row.news) lines.push(['Trip news', 'Yes, they asked for trip news by email']);
-  const html = '<div style="font:15px/1.5 Arial,sans-serif;color:#111">'
-    + '<p style="margin:0 0 12px"><strong>' + esc(FORMS[row.form]) + '</strong> from the website.</p>'
-    + '<table cellpadding="8" style="border-collapse:collapse;border:1px solid #e5e5e5">'
-    + lines.map((l) => '<tr><td style="border:1px solid #e5e5e5;background:#fafafa;vertical-align:top;white-space:nowrap"><strong>' + l[0] + '</strong></td><td style="border:1px solid #e5e5e5">' + l[1] + '</td></tr>').join('')
-    + '</table><p style="margin:16px 0 0"><a href="' + SITE + '/admin/#/enquiries/' + row.id + '">Open it in the Fuyamo admin</a></p></div>';
-  const message = { to: NOTIFY, subject: row.subject, htmlBody: html, name: 'Fuyamo website' };
-  if (row.email) message.replyTo = row.email;
-  MailApp.sendEmail(message);
+  const partner = row.form === 'corporate' && d['Enquiry type'] === 'Partnerships';
+  const wantsWhatsApp = /whatsapp/i.test(d['Reply by'] || '') || (!row.email && !!wa);
+
+  // The headline: what kind of enquiry, and one line about what they want.
+  const kind = partner ? 'Partnership enquiry' : row.form === 'corporate' ? 'Corporate enquiry'
+    : row.form === 'birthday' ? 'Birthday offer' : wantsWhatsApp ? 'Callback request · WhatsApp' : 'Callback request · email';
+  const about = row.form === 'corporate'
+    ? [d['Company / department'], partner ? '' : d['Enquiry type']].filter(Boolean).join(' · ')
+    : row.form === 'birthday' ? (d['Birthday month'] ? 'Birthday in ' + d['Birthday month'] : '')
+    : d['About'] || d['Destination'] || '';
+  const used = ['Start the chat', 'Reply by', 'Asked from', 'Message', 'WhatsApp'];
+  if (d['Destination'] && about.toLowerCase().indexOf(String(d['Destination']).toLowerCase()) >= 0) used.push('Destination'); // already in the headline
+  if (row.form === 'corporate') used.push('Company / department', 'Enquiry type');
+  else if (row.form === 'birthday') used.push('Birthday month');
+  else used.push('About');
+
+  // Where they were on the site: "Home page", "Bali", "Corporate"…
+  const from = String(d['Asked from'] || '');
+  const fromUrl = (from.match(/https?:\/\/\S+/) || [''])[0];
+  let fromName = from.replace(fromUrl, '').replace(/\s*·\s*$/, '').split(' · ')[0].trim();
+  if (/^https?:\/\/[^/]+\/?$/.test(fromUrl) || /^Fuyamo Travel$/.test(fromName)) fromName = 'the home page';
+  if (!fromName && row.form === 'corporate') fromName = 'the corporate page';
+
+  const when = Utilities.formatDate(new Date(row.received), 'Africa/Johannesburg', 'd MMM yyyy, HH:mm');
+  const button = (href, label, primary) => '<a href="' + esc(href) + '" style="display:inline-block;margin:0 8px 8px 0;padding:12px 20px;border-radius:999px;'
+    + (primary ? 'background:#FFBE41;color:#111111;' : 'background:#ffffff;color:#111111;border:1px solid #D9D4CB;')
+    + 'font:bold 15px/1 Arial,sans-serif;text-decoration:none">' + label + '</a>';
+  const mail = row.email ? 'mailto:' + row.email + '?subject=' + encodeURIComponent('Re: ' + row.subject) : '';
+  // Corporate forms ask for a phone number (not necessarily WhatsApp): that one gets a Call button.
+  const phoneOnly = row.form === 'corporate';
+  const buttons = [
+    wantsWhatsApp && wa && !phoneOnly ? button(wa, 'WhatsApp ' + esc(first), true) : '',
+    mail ? button(mail, 'Email ' + esc(first), !wantsWhatsApp || !wa || phoneOnly) : '',
+    row.phone && phoneOnly ? button('tel:' + row.phone.replace(/[^\d+]/g, ''), 'Call', false) : '',
+    !wantsWhatsApp && wa && !phoneOnly ? button(wa, 'WhatsApp', false) : '',
+    button(SITE + '/admin/#/enquiries/' + row.id, 'Open in the admin', false),
+  ].join('');
+
+  const rows = [];
+  if (row.email) rows.push(['Email', '<a href="mailto:' + esc(row.email) + '" style="color:#111111">' + esc(row.email) + '</a>']);
+  if (row.phone) rows.push([phoneOnly ? 'Phone' : 'WhatsApp', esc(row.phone)]);
+  Object.keys(d).forEach((k) => { if (used.indexOf(k) < 0 && d[k]) rows.push([esc(k), esc(d[k]).replace(/\n/g, '<br>')]); });
+  const detail = rows.map((r) => '<tr><td style="padding:10px 0;border-top:1px solid #EEEAE3;width:38%;vertical-align:top;font:12px/1.4 Arial,sans-serif;color:#7A756C;text-transform:uppercase;letter-spacing:.06em">' + r[0]
+    + '</td><td style="padding:10px 0;border-top:1px solid #EEEAE3;vertical-align:top;font:15px/1.45 Arial,sans-serif;color:#111111">' + r[1] + '</td></tr>').join('');
+  const message = d['Message'] ? '<tr><td style="padding:0 28px 8px"><div style="padding:14px 16px;border-radius:12px;background:#F4F2ED;font:15px/1.5 Arial,sans-serif;color:#111111">'
+    + '&ldquo;' + esc(d['Message']).replace(/\n/g, '<br>') + '&rdquo;</div></td></tr>' : '';
+  const notes = [
+    fromName ? 'Sent from ' + (fromUrl ? '<a href="' + esc(fromUrl) + '" style="color:#7A756C">' + esc(fromName) + '</a>' : esc(fromName)) : '',
+    row.news ? 'wants trip news by email' : '',
+  ].filter(Boolean).join(' · ');
+
+  const html = '<div style="margin:0;padding:24px 12px;background:#F4F2ED">'
+    + '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;border-collapse:separate">'
+    + '<tr><td style="padding:26px 28px 6px;font:12px/1.4 Arial,sans-serif;color:#7A756C;text-transform:uppercase;letter-spacing:.08em">' + esc(kind) + ' · ' + esc(when) + '</td></tr>'
+    + '<tr><td style="padding:0 28px;font:bold 26px/1.2 Arial,sans-serif;color:#111111">' + esc(row.name) + '</td></tr>'
+    + (about ? '<tr><td style="padding:4px 28px 0;font:17px/1.4 Arial,sans-serif;color:#3D3A35">' + esc(about) + '</td></tr>' : '')
+    + '<tr><td style="padding:18px 28px 10px">' + buttons + '</td></tr>'
+    + message
+    + (detail ? '<tr><td style="padding:6px 28px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + detail + '</table></td></tr>' : '')
+    + '<tr><td style="padding:14px 28px 24px;font:13px/1.5 Arial,sans-serif;color:#7A756C">' + (notes ? notes + '.<br>' : '') + (row.email ? 'Reply to this email to answer ' + esc(first) + ' directly.' : esc(first) + ' left a WhatsApp number only, so reply on WhatsApp.') + '</td></tr>'
+    + '</table></div>';
+  const mailMessage = { to: NOTIFY, subject: row.subject, htmlBody: html, name: 'Fuyamo website' };
+  if (row.email) mailMessage.replyTo = row.email;
+  MailApp.sendEmail(mailMessage);
 }
 
 // ---------- The admin dashboard ----------
