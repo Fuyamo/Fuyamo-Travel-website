@@ -354,6 +354,7 @@ textarea { resize: vertical; }
 .state--booked { background: #E3F1E9; color: var(--green); }
 .state--yamo { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .state--changes { background: #FDECEA; color: var(--red); }
+.state--opened { background: var(--ink); color: var(--amber); }
 .seg--scroll { display: flex; width: max-content; max-width: 100%; overflow-x: auto; scrollbar-width: none; margin-bottom: 14px; }
 .seg--scroll::-webkit-scrollbar { display: none; }
 .seg--scroll button { white-space: nowrap; flex-shrink: 0; }

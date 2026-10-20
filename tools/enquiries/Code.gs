@@ -284,11 +284,13 @@ function writeRow(row) {
 // - Yamo emailed the proposal → "Proposal sent", and Plunk starts the reminders only (yamo_proposal_sent).
 // - They booked → "Booked"; they declined or it was closed → "Not going ahead" (either stops the reminders).
 // Returns the new status, or '' when nothing changed.
-// Yamo's own status is kept in the "Yamo status" column (new, building, sent, changes, accepted, declined, booked),
-// so the admin's list shows where each request is on Yamo.
+// Yamo's own status is kept in the "Yamo status" column (new, building, sent, opened, changes, accepted, declined,
+// booked), so the admin's list shows where each request is on Yamo. "opened" is Yamo's "sent" once the client has
+// opened the proposal (Yamo records when).
 function applyYamo(row, y) {
   if (!y) return '';
-  const yamoStatus = y.bookingId ? 'booked' : String(y.status || '');
+  const opened = y.status === 'sent' && y.proposal && y.proposal.openedAt;
+  const yamoStatus = y.bookingId ? 'booked' : opened ? 'opened' : String(y.status || '');
   let dirty = yamoStatus !== row.yamo_status;
   row.yamo_status = yamoStatus;
   let status = row.status, event = '';

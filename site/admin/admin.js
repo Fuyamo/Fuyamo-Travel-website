@@ -1328,6 +1328,7 @@
   const YAMO_STAGE = { new: 'Sent to Yamo', building: 'Being built on Yamo' };
   function stage(e) {
     if (e.status === 'New' && e.yamo) return { key: 'yamo', label: YAMO_STAGE[e.yamo_status] || 'Sent to Yamo' };
+    if (e.status === 'Proposal sent' && e.yamo && e.yamo_status === 'opened') return { key: 'opened', label: 'Proposal opened' };
     if (e.status === 'Proposal sent' && e.yamo && e.yamo_status === 'changes') return { key: 'changes', label: 'Changes requested' };
     if (e.status === 'Proposal sent' && e.yamo && e.yamo_status === 'accepted') return { key: 'proposal-sent', label: 'Accepted on Yamo' };
     return { key: slugify(e.status), label: statusName(e.status, e) };
@@ -1350,7 +1351,11 @@
   function yamoLine(y) {
     if (!y) return 'Sent to Yamo. Checking where it is…';
     if (y.error) return 'Sent to Yamo. ' + y.error;
-    let t = (YAMO_STATUS[y.status] || 'On Yamo: ' + (y.status || 'sent')) + '.';
+    const openedAt = y.status === 'sent' && y.proposal && y.proposal.openedAt;
+    const when = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : ' (' + niceDate(d.toISOString()) + ', ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ')'; };
+    let t = openedAt ? 'The client has opened the proposal' + when(openedAt) + '.'
+      : y.status === 'sent' ? 'Yamo has emailed the proposal to the client. They haven’t opened it yet.'
+      : (YAMO_STATUS[y.status] || 'On Yamo: ' + (y.status || 'sent')) + '.';
     if (y.bookingId) t += ' They booked.';
     else if (y.closed && y.status !== 'declined') t += ' It’s closed on Yamo.';
     return t;
@@ -1660,9 +1665,9 @@
     if (body.action === 'yamo_ping') return Promise.resolve({ ok: true, agency: 'Fuyamo Travel (test)' });
     if (body.action === 'yamo_status') {
       const r = mockList.find((x) => x.id === body.id);
-      const y = { id: r.yamo, status: 'sent', closed: false, bookingId: '', proposal: { url: 'https://app.yamo.travel/p/mock', sentAt: 'now' } };
+      const y = { id: r.yamo, status: 'sent', closed: false, bookingId: '', proposal: { url: 'https://app.yamo.travel/p/mock', sentAt: new Date().toISOString(), openedAt: new Date().toISOString() } };
       const changed = r.status === 'New';
-      r.yamo_status = 'sent';
+      r.yamo_status = 'opened';
       if (changed) { r.status = 'Proposal sent'; r.proposal = y.proposal.url; r.plunk = 'yamo_proposal_sent ✓'; }
       return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: y, enquiry: clone(r), changed }), 400));
     }
