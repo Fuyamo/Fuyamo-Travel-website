@@ -5,7 +5,9 @@
 // This runs in Google Apps Script, attached to the "Fuyamo website enquiries" Google Sheet in info@fuyamo.co.za's
 // Drive. The website's forms post here: each one is saved as a row in the sheet, emailed to info@ (Reply goes straight
 // to the customer) and, when Plunk is connected, passed to Plunk so its workflows can email the customer.
-// The admin dashboard reads and updates the rows, signed in with a fuyamo.co.za Google account.
+// The admin dashboard reads and updates the rows, and reads Google Analytics through here (as info@, so nobody signs
+// in to Google in the dashboard). It proves who it is with its GitHub access: only people who can edit the website
+// get in.
 //
 // To change it: edit this file in the project, paste it over Code.gs in the Apps Script editor, then
 // Deploy → Manage deployments → edit (pencil) → Version: New version → Deploy. The web address stays the same.
@@ -14,14 +16,21 @@
 // public key (pk_…), the only key its event endpoint accepts. It stays here, not on the website, so nobody else can
 // fire Fuyamo's events.
 //
+// Analytics uses the advanced service "Google Analytics Data API" (Services → +, identifier AnalyticsData). info@
+// needs access to the Analytics property.
+//
 // Yamo (the "Send to Yamo" button in the admin) uses the script property YAMO_API_KEY: an Agency OS API key
 // (yamo_sk_…, Agency OS → Settings → Integrations). It's secret, so it only ever lives here.
 
 const NOTIFY = 'info@fuyamo.co.za';
 const DOMAIN = 'fuyamo.co.za';
 const SITE = 'https://fuyamo.co.za';
-// The admin's Google sign-in (the same OAuth client as its analytics).
+// The admin's older Google sign-in (still accepted).
 const CLIENT_ID = '27354709460-ah0aumamm32ficarg94evke0qd23qq23.apps.googleusercontent.com';
+// The website's repository: anyone whose GitHub access can push to it may use the dashboard.
+const REPO = 'Fuyamo/Fuyamo-Travel-website';
+// Google Analytics property (the dashboard's Settings can name another one).
+const GA_PROPERTY = '559540779';
 const PLUNK_API = 'https://next-api.useplunk.com';
 const YAMO_API = 'https://api.yamo.travel/agency-api/v1';
 
@@ -218,8 +227,8 @@ function notify(row, details) {
 // ---------- The admin dashboard ----------
 
 function admin(body) {
-  const who = signedIn(body.token);
-  if (!who) return { ok: false, error: 'Please sign in with your fuyamo.co.za Google account again.', auth: true };
+  const who = body.github ? gitHubMember(body.github) : signedIn(body.token);
+  if (!who) return { ok: false, error: 'The dashboard’s sign-in wasn’t accepted. Sign out, sign in again with the team code and try again.', auth: true };
 
   if (body.action === 'list') {
     const list = rows(enquirySheet()).reverse();
@@ -304,7 +313,43 @@ function admin(body) {
     return res.ok ? { ok: true, agency: String(a.name || a.slug || res.raw.name || res.raw.slug || 'your agency') } : res;
   }
 
+  // Google Analytics reports for the dashboard's Overview and Analytics pages.
+  if (body.action === 'analytics') {
+    const property = /^\d{5,15}$/.test(String(body.property || '')) ? String(body.property) : GA_PROPERTY;
+    return { ok: true, results: gaReports(property, Array.isArray(body.reports) ? body.reports.slice(0, 20) : []) };
+  }
+
   return { ok: false, error: 'Unknown request.' };
+}
+
+// Runs the reports (5 at a time, the most Google takes in one batch) and returns each one's rows as
+// { d: dimension values, m: metric values }, or { error }. Live ("realtime") reports can't be batched.
+function gaReports(property, list) {
+  const name = 'properties/' + property;
+  const out = list.map(() => null);
+  const batch = [];
+  list.forEach((r, i) => {
+    const req = r && r.report && typeof r.report === 'object' ? r.report : {};
+    if (r && r.realtime) out[i] = gaTry(() => AnalyticsData.Properties.runRealtimeReport(req, name));
+    else batch.push([i, req]);
+  });
+  for (let k = 0; k < batch.length; k += 5) {
+    const part = batch.slice(k, k + 5);
+    try {
+      const res = AnalyticsData.Properties.batchRunReports({ requests: part.map(([, req]) => req) }, name);
+      part.forEach(([i], j) => { out[i] = gaRows(res.reports[j]); });
+    } catch (err) {
+      // One bad report fails the whole batch, so run them one by one to find which.
+      part.forEach(([i, req]) => { out[i] = gaTry(() => AnalyticsData.Properties.runReport(req, name)); });
+    }
+  }
+  return out;
+}
+function gaRows(res) {
+  return { rows: ((res && res.rows) || []).map((r) => ({ d: (r.dimensionValues || []).map((v) => v.value), m: (r.metricValues || []).map((v) => +v.value) })) };
+}
+function gaTry(run) {
+  try { return gaRows(run()); } catch (err) { return { error: String((err && err.message) || err).replace(/^.*?: /, '') }; }
 }
 
 // Tells Plunk about a status change (its workflows email the customer). proposal_status stays on the contact, so the
@@ -417,7 +462,25 @@ function intlPhone(raw) {
   return /^\d{9}$/.test(d) ? '+27' + d : '';
 }
 
-// The dashboard sends its Google access token. Google confirms who it belongs to; only fuyamo.co.za accounts,
+// The dashboard sends its GitHub access (unlocked with the team code). GitHub confirms whose it is and whether they can
+// push to the website's repository; only then are they let in. Checked tokens are remembered for 10 minutes.
+function gitHubMember(token) {
+  if (typeof token !== 'string' || token.length > 512 || !/^[\w-]+$/.test(token)) return '';
+  const cache = CacheService.getScriptCache();
+  const key = 'gh:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token));
+  const known = cache.get(key);
+  if (known) return known;
+  const options = { headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, muteHttpExceptions: true };
+  const repo = UrlFetchApp.fetch('https://api.github.com/repos/' + REPO, options);
+  if (repo.getResponseCode() !== 200 || !(JSON.parse(repo.getContentText()).permissions || {}).push) return '';
+  const user = UrlFetchApp.fetch('https://api.github.com/user', options);
+  const me = user.getResponseCode() === 200 ? JSON.parse(user.getContentText()) : {};
+  const who = String(me.name || me.login || 'GitHub').slice(0, 80);
+  cache.put(key, who, 600);
+  return who;
+}
+
+// The older sign-in: the dashboard sends its Google access token. Google confirms who it belongs to; only fuyamo.co.za accounts,
 // signed in through the admin's own Google client, are let in. Checked tokens are remembered for 5 minutes.
 function signedIn(token) {
   if (!token || typeof token !== 'string' || token.length > 4096) return '';
