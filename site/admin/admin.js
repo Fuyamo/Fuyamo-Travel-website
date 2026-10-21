@@ -24,6 +24,7 @@
     trips: null, photos: null, faqs: null, reviews: null, posts: null, settings: null, library: null,
     pending: new Map(), // photos chosen from the device but not saved yet: "/photos/…" → { base64, url }
     local: new Map(), // photos saved in this session, shown from the device copy: "/photos/…" → url
+    moves: { photos: [], posts: {} }, // photos moved here from another page: taken out there with this page's save
     build: null,
   };
 
@@ -205,7 +206,10 @@
     const label = button && button.textContent;
     if (button) { button.disabled = true; button.textContent = 'Saving…'; }
     try {
-      await commit(files, message);
+      const moved = movedFiles();
+      await commit(files.concat(moved.map(({ path, text }) => ({ path, text }))), message + (moved.length ? ' (photo moved from ' + moved.map((f) => f.label).join(' and ') + ')' : ''));
+      moved.forEach((f) => f.done());
+      S.moves = { photos: [], posts: {} };
       files.forEach((f) => {
         const key = '/' + f.path;
         if (S.pending.has(key)) {
@@ -487,19 +491,65 @@
   // Where each photo is already used. A photo goes in one place on the site, not counting the trips: a trip's cover
   // and gallery can also be used once somewhere else. So the picker won't hand out a photo already in another place.
   function photoUses() {
-    const uses = new Map();
-    if (V && V.draft && Array.isArray(V.draft.gallery)) return uses; // choosing a trip's own photos: anything goes
-    const add = (src, where) => { if (!uses.has(src)) uses.set(src, where); };
-    const walk = (v, where) => {
-      if (typeof v === 'string') {
-        if (/^\/photos\//.test(v)) add(v, where);
-        else (v.match(/\]\((\/photos\/[^)\s]+)\)/g) || []).forEach((m) => add(decodeURIComponent(m.slice(2, -1)), where));
-      } else if (v && typeof v === 'object') Object.values(v).forEach((x) => walk(x, where));
+    const uses = new Map(), d = V && V.draft;
+    if (d && Array.isArray(d.gallery)) return uses; // choosing a trip's own photos: anything goes
+    // Each use: where it is, and move() to take it out of there. On this page that happens straight away; on another
+    // page it's queued and saved together with this page.
+    const add = (src, where, take) => { if (src && !uses.has(src)) uses.set(src, { where, move: take }); };
+    // On this page the old spot is emptied just after the photo lands in its new one (so list positions don't shift
+    // under the new spot first).
+    const now = (fn) => () => setTimeout(() => { fn(V.draft); markDirty(); redraw(); }, 0);
+    const later = (key, fn) => () => {
+      if (key === 'photos') S.moves.photos.push(fn); else (S.moves.posts[key] = S.moves.posts[key] || []).push(fn);
+      markDirty();
     };
-    if (V && V.draft) walk(V.draft, 'on this page');
-    walk(S.photos, 'in Photos');
-    (S.posts || []).forEach((p) => walk([p.image, p.body], 'in the article “' + p.title + '”'));
+    const photoSpots = (P, where, take) => {
+      if (!P) return;
+      HEADER_SLOTS.forEach(([k, label]) => { const v = (P.headers || {})[k]; add(v, `${where}: ${label} header`, take((p) => { if (p.headers[k] === v) p.headers[k] = ''; })); });
+      LIST_SLOTS.forEach(([k, label]) => (P[k] || []).forEach((v, i) => add(v, `${where}: ${label} ${i + 1}`, take((p) => { if (p[k][i] === v) p[k][i] = ''; }))));
+      SINGLE_SLOTS.forEach(([k, label]) => add(P[k], `${where}: ${label}`, take((p) => { if (p[k] === P[k]) p[k] = ''; })));
+      (P.moments || []).forEach((m) => add(m.image, `${where}: the “${m.caption || 'untitled'}” moment`, take((p) => {
+        let i = p.moments.indexOf(m);
+        if (i < 0) i = p.moments.findIndex((x) => x.image === m.image);
+        if (i >= 0) p.moments.splice(i, 1);
+      })));
+    };
+    const articleSpots = (post, where, take) => {
+      add(post.image, `${where} (its photo)`, take((x) => { if (x.image === post.image) x.image = ''; }));
+      (String(post.body).match(/\]\((\/photos\/[^)\s]+)\)/g) || []).forEach((m) => {
+        const src = decodeURIComponent(m.slice(2, -1));
+        add(src, `${where} (in the text)`, take((x) => { x.body = withoutPhoto(x.body, src); }));
+      });
+    };
+    const onPhotos = !!(d && d.headers), slug = d && typeof d.body === 'string' ? (d.slug || '') : null;
+    if (onPhotos) photoSpots(d, 'on this page', now); else photoSpots(S.photos, 'in Photos', (fn) => later('photos', fn));
+    if (slug !== null) articleSpots(d, 'in this article', now);
+    (S.posts || []).filter((p) => p.slug !== slug).forEach((p) => articleSpots(p, `in the article “${p.title}”`, (fn) => later(p.slug, fn)));
     return uses;
+  }
+  // The article text without one of its photos.
+  const withoutPhoto = (body, src) => {
+    let done = false;
+    return String(body).replace(/\n*!\[[^\]]*\]\(([^)\s]+)\)\n*/g, (all, url) => {
+      try { if (!done && decodeURIComponent(url) === src) { done = true; return '\n\n'; } } catch (err) { /* not an address */ }
+      return all;
+    }).replace(/\n{3,}/g, '\n\n').trim();
+  };
+  // The other pages' files changed by moving a photo from them (see photoUses), saved with this page.
+  function movedFiles() {
+    const files = [];
+    if (S.moves.photos.length && S.photos) {
+      const p = clone(S.photos);
+      S.moves.photos.forEach((fn) => fn(p));
+      files.push({ path: 'content/photos.json', text: json(p), label: 'Photos', done: () => { S.photos = p; } });
+    }
+    Object.keys(S.moves.posts).forEach((slug) => {
+      const post = clone((S.posts || []).find((x) => x.slug === slug));
+      if (!post) return;
+      S.moves.posts[slug].forEach((fn) => fn(post));
+      files.push({ path: `posts/${slug}.md`, text: postText(post), label: `“${post.title}”`, done: () => { S.posts = S.posts.map((x) => (x.slug === slug ? post : x)); } });
+    });
+    return files;
   }
 
   // A trip's cover and gallery, which may also be used once somewhere else.
@@ -515,15 +565,15 @@
       const grid = d.el.querySelector('.picker__grid'), search = d.el.querySelector('.picker__search');
       const draw = () => {
         const term = search.value.trim().toLowerCase();
-        const uses = photoUses(), trips = tripPhotos(), usedAt = (p) => (p !== current && uses.get(p)) || '';
+        const uses = photoUses(), trips = tripPhotos(), usedAt = (p) => (p !== current && uses.has(p) ? uses.get(p).where : '');
         const list = [...S.pending.keys()].concat(S.library || []).filter((p) => (video || !isVideo(p)) && (!term || p.toLowerCase().includes(term)));
         const tile = (p) => {
           const where = usedAt(p);
-          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : trips.has(p) ? '<span class="picker__used picker__used--trip">Trip photo</span>' : ''}</button>`;
+          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Used ' + where + '. Choose it to move it here.' : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : trips.has(p) ? '<span class="picker__used picker__used--trip">Trip photo</span>' : ''}</button>`;
         };
         const free = list.filter((p) => !usedAt(p)), taken = list.filter((p) => usedAt(p));
         grid.innerHTML = list.length ? (free.length ? each(free, tile) : '<p class="picker__group">Every photo here is already on the website. Upload a new one.</p>')
-          + (taken.length ? '<p class="picker__group">Already used on the website (a photo goes in one place, besides a trip’s gallery)</p>' + each(taken, tile) : '')
+          + (taken.length ? '<p class="picker__group">Already used on the website: choosing one moves it here (and takes it out of its old spot)</p>' + each(taken, tile) : '')
           : '<p class="muted">No photos found.</p>';
       };
       Promise.all([ensure('library'), ensure('photos', 'trips', 'posts').catch(() => {})]).then(draw).catch((err) => { grid.innerHTML = `<p class="muted">Couldn’t load the photos: ${h(err.message)}</p>`; });
@@ -531,8 +581,11 @@
       d.el.addEventListener('click', (e) => {
         if (e.target.closest('[data-x="close"]')) d.close(null);
         const item = e.target.closest('[data-src]');
-        if (item && item.dataset.used) toast(`That photo is already used ${item.dataset.used}. A photo goes in one place (besides a trip’s gallery), so choose another or upload a new one.`, 'error');
-        else if (item) d.close(item.dataset.src);
+        if (item && item.dataset.used) {
+          const use = photoUses().get(item.dataset.src);
+          confirmBox('Move this photo here?', `It’s used ${use.where}. A photo goes in one place, so it will be taken out of there${/^on this page|^in this article/.test(use.where) ? '' : ' when you save'}.`, { ok: 'Move it here' })
+            .then((yes) => { if (yes) { use.move(); d.close(item.dataset.src); } });
+        } else if (item) d.close(item.dataset.src);
       });
       d.el.querySelector('input[type=file]').addEventListener('change', async (e) => {
         const files = e.target.files;
@@ -1925,6 +1978,7 @@
       return;
     }
     S.dirty = false;
+    S.moves = { photos: [], posts: {} };
     shown = location.hash;
     const path = location.hash.replace(/^#\/?/, '');
     setNav(path);
