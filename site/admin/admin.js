@@ -381,7 +381,9 @@
   async function loadLibrary() {
     const tree = (await gh(`/repos/${REPO}/git/trees/${BRANCH}?recursive=1`)).tree;
     S.paths = new Set(tree.filter((t) => t.type === 'blob').map((t) => t.path)); // every file, e.g. to see which trips have a PDF
-    const photos = tree.filter((t) => t.type === 'blob' && /^photos\/.+\.(jpe?g|png|webp|heic|heif|mp4|mov|m4v)$/i.test(t.path)).map((t) => '/' + t.path);
+    const files = tree.filter((t) => t.type === 'blob' && /^photos\/.+\.(jpe?g|png|webp|heic|heif|mp4|mov|m4v)$/i.test(t.path));
+    S.blobs = new Map(files.map((t) => [t.sha, '/' + t.path])); // to spot a photo uploaded a second time
+    const photos = files.map((t) => '/' + t.path);
     // Newest uploads first, then everything else by folder.
     return photos.sort((a, b) => (b.startsWith('/photos/uploads/') - a.startsWith('/photos/uploads/')) || (a.startsWith('/photos/uploads/') ? b.localeCompare(a) : a.localeCompare(b, undefined, { numeric: true })));
   }
@@ -427,6 +429,30 @@
 
   // Shrinks a photo on the device before sending it (most phone photos are 3–6 MB). iPhone HEIC photos that this
   // browser can't open are sent as they are; the website build converts them.
+  // The library photo with exactly these bytes, if there is one (GitHub names each file by a hash of its bytes).
+  async function libraryCopy(blob) {
+    try {
+      await ensure('library');
+      const bytes = new Uint8Array(await blob.arrayBuffer()), head = new TextEncoder().encode(`blob ${bytes.length}\0`);
+      const all = new Uint8Array(head.length + bytes.length);
+      all.set(head);
+      all.set(bytes, head.length);
+      const sha = [...new Uint8Array(await crypto.subtle.digest('SHA-1', all))].map((b) => b.toString(16).padStart(2, '0')).join('');
+      return (S.blobs && S.blobs.get(sha)) || '';
+    } catch (err) { return ''; }
+  }
+
+  // Remembers a just-uploaded file's blob id (its bytes are still on the device), so uploading it again is caught too.
+  function libraryCopyAdd(p) {
+    const item = S.pending.get(p);
+    if (!item || !S.blobs) return;
+    const bytes = Uint8Array.from(atob(item.base64), (c) => c.charCodeAt(0)), head = new TextEncoder().encode(`blob ${bytes.length}\0`);
+    const all = new Uint8Array(head.length + bytes.length);
+    all.set(head);
+    all.set(bytes, head.length);
+    crypto.subtle.digest('SHA-1', all).then((d) => S.blobs.set([...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join(''), p));
+  }
+
   async function preparePhoto(file) {
     let blob = file, ext = (file.name.match(/\.([a-z0-9]+)$/i) || [, 'jpg'])[1].toLowerCase();
     // Videos (Moments) are sent as they are: the website build cuts them to 8 seconds and shrinks them.
@@ -446,6 +472,9 @@
       if (!/^(jpe?g|png|webp|heic|heif)$/.test(ext)) throw new Error('That file isn’t a photo this site can use.');
       if (file.size > 25e6) throw new Error('That photo is too big (over 25 MB).');
     }
+    // The same file uploaded again (same photo, same size) reuses the copy already in the library.
+    const same = await libraryCopy(blob);
+    if (same) return same;
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result).split(',')[1]);
@@ -462,12 +491,16 @@
   // Several photos at once go straight into the library (photos/uploads/), saved in one go without touching the page
   // being edited; they're then placed from any photo frame. report(text) shows progress.
   async function uploadPhotos(fileList, report = () => {}) {
-    const all = [...fileList], paths = [];
+    const all = [...fileList];
+    let paths = [];
     for (const file of all) {
       report(`Preparing ${paths.length + 1} of ${all.length}…`);
       try { paths.push(await preparePhoto(file)); } catch (err) { toast(`${file.name}: ${err.message}`, 'error'); }
     }
-    if (!paths.length) return [];
+    const known = paths.filter((p) => !S.pending.has(p));
+    if (known.length) toast(`${known.length} of these ${known.length === 1 ? 'is' : 'are'} already in the library, so ${known.length === 1 ? 'it wasn’t' : 'they weren’t'} uploaded again.`);
+    paths = paths.filter((p) => S.pending.has(p));
+    if (!paths.length) return known;
     report(`Uploading ${paths.length} photo${paths.length === 1 ? '' : 's'}…`);
     await ensure('library').catch(() => {});
     try {
@@ -478,6 +511,7 @@
       return [];
     }
     paths.forEach((p) => {
+      libraryCopyAdd(p);
       S.local.set(p, S.pending.get(p).url);
       S.pending.delete(p);
       if (S.library && !S.library.includes(p)) S.library.unshift(p);
@@ -576,16 +610,19 @@
           + (taken.length ? '<p class="picker__group">Already used on the website: choosing one moves it here (and takes it out of its old spot)</p>' + each(taken, tile) : '')
           : '<p class="muted">No photos found.</p>';
       };
+      // A photo already used in another spot is moved here (after a yes), anything else is simply chosen.
+      const choose = (src) => {
+        const use = src !== current && photoUses().get(src);
+        if (!use) { d.close(src); return; }
+        confirmBox('Move this photo here?', `It’s used ${use.where}. A photo goes in one place, so it will be taken out of there${/^on this page|^in this article/.test(use.where) ? '' : ' when you save'}.`, { ok: 'Move it here' })
+          .then((yes) => { if (yes) { use.move(); d.close(src); } else draw(); });
+      };
       Promise.all([ensure('library'), ensure('photos', 'trips', 'posts').catch(() => {})]).then(draw).catch((err) => { grid.innerHTML = `<p class="muted">Couldn’t load the photos: ${h(err.message)}</p>`; });
       search.addEventListener('input', draw);
       d.el.addEventListener('click', (e) => {
         if (e.target.closest('[data-x="close"]')) d.close(null);
         const item = e.target.closest('[data-src]');
-        if (item && item.dataset.used) {
-          const use = photoUses().get(item.dataset.src);
-          confirmBox('Move this photo here?', `It’s used ${use.where}. A photo goes in one place, so it will be taken out of there${/^on this page|^in this article/.test(use.where) ? '' : ' when you save'}.`, { ok: 'Move it here' })
-            .then((yes) => { if (yes) { use.move(); d.close(item.dataset.src); } });
-        } else if (item) d.close(item.dataset.src);
+        if (item) choose(item.dataset.src);
       });
       d.el.querySelector('input[type=file]').addEventListener('change', async (e) => {
         const files = e.target.files;
@@ -598,7 +635,12 @@
         }
         if (!video && (/^video\//.test(files[0].type) || VIDEO.test(files[0].name))) { toast('Videos can only go in Moments.', 'error'); e.target.value = ''; return; }
         grid.innerHTML = '<p class="muted">Preparing the photo…</p>';
-        try { d.close(await preparePhoto(files[0])); } catch (err) { toast(err.message, 'error'); draw(); }
+        let src;
+        try { src = await preparePhoto(files[0]); } catch (err) { toast(err.message, 'error'); draw(); return; }
+        e.target.value = '';
+        if (S.pending.has(src) || src === current || !photoUses().has(src)) { d.close(src); return; }
+        toast('That photo is already in the library.');
+        choose(src);
       });
     });
   }
