@@ -447,6 +447,33 @@
     return path;
   }
 
+  // Several photos at once go straight into the library (photos/uploads/), saved in one go without touching the page
+  // being edited; they're then placed from any photo frame. report(text) shows progress.
+  async function uploadPhotos(fileList, report = () => {}) {
+    const all = [...fileList], paths = [];
+    for (const file of all) {
+      report(`Preparing ${paths.length + 1} of ${all.length}…`);
+      try { paths.push(await preparePhoto(file)); } catch (err) { toast(`${file.name}: ${err.message}`, 'error'); }
+    }
+    if (!paths.length) return [];
+    report(`Uploading ${paths.length} photo${paths.length === 1 ? '' : 's'}…`);
+    await ensure('library').catch(() => {});
+    try {
+      await commit(paths.map((p) => ({ path: p.slice(1), base64: S.pending.get(p).base64 })), `Photos: upload ${paths.length} photo${paths.length === 1 ? '' : 's'}`);
+    } catch (err) {
+      paths.forEach((p) => S.pending.delete(p));
+      toast(err.status === 401 ? 'Your GitHub access has expired. Replace it in Settings.' : err.status === 403 ? CANT_SAVE : "Couldn't upload: " + err.message, 'error');
+      return [];
+    }
+    paths.forEach((p) => {
+      S.local.set(p, S.pending.get(p).url);
+      S.pending.delete(p);
+      if (S.library && !S.library.includes(p)) S.library.unshift(p);
+    });
+    toast(`${paths.length} photo${paths.length === 1 ? '' : 's'} added to the library. Choose them from any photo frame.`);
+    return paths;
+  }
+
   // ---------- Photo picker ----------
 
   // Where each photo is already used. A photo goes in one place on the site, not counting the trips: a trip's cover
@@ -474,7 +501,7 @@
     return new Promise((resolve) => {
       const d = dialog(`
         <div class="picker__head"><h2 class="dialog__title">${h(title)}</h2><button class="icon-btn" data-x="close" aria-label="Close">${icon('close')}</button></div>
-        <label class="picker__upload">${icon('upload')}<span><strong>Upload from this device</strong><small>Any size. Phone photos are fine.</small></span><input type="file" accept="image/*,.heic,.heif" hidden></label>
+        <label class="picker__upload">${icon('upload')}<span><strong>Upload from this device</strong><small>Any size, phone photos are fine. Choose several to add them all to the library.</small></span><input type="file" accept="image/*,.heic,.heif" multiple hidden></label>
         <input class="picker__search" type="search" placeholder="Search photos">
         <div class="picker__grid"><p class="muted">Loading photos…</p></div>`, { wide: true, onClose: (v) => resolve(v || null) });
       const grid = d.el.querySelector('.picker__grid'), search = d.el.querySelector('.picker__search');
@@ -500,10 +527,16 @@
         else if (item) d.close(item.dataset.src);
       });
       d.el.querySelector('input[type=file]').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = e.target.files;
+        if (!files.length) return;
+        if (files.length > 1) {
+          await uploadPhotos(files, (text) => { grid.innerHTML = `<p class="muted">${h(text)}</p>`; });
+          e.target.value = '';
+          draw();
+          return;
+        }
         grid.innerHTML = '<p class="muted">Preparing the photo…</p>';
-        try { d.close(await preparePhoto(file)); } catch (err) { toast(err.message, 'error'); draw(); }
+        try { d.close(await preparePhoto(files[0])); } catch (err) { toast(err.message, 'error'); draw(); }
       });
     });
   }
@@ -1017,6 +1050,7 @@
   async function photosView() {
     page('Photos', loading());
     await ensure('photos', 'trips');
+    await Promise.all([ensure('library'), ensure('posts')]).catch(() => {});
     const draft = clone(S.photos);
     draft.headers = draft.headers || {};
     LIST_SLOTS.forEach(([k, , , n]) => { draft[k] = draft[k] || []; while (draft[k].length < n) draft[k].push(''); });
@@ -1025,8 +1059,16 @@
       draft,
       redraw() {
         const d = V.draft;
+        const uses = photoUses(), trips = tripPhotos();
+        const waiting = (S.library || []).filter((p) => p.startsWith('/photos/uploads/') && !uses.has(p) && !trips.has(p));
         page('Photos', `
           <p class="intro-text">Choose a section’s photo to change it. Trip photos are under <a href="#/trips">Trips</a>.</p>
+          <section class="card">
+            <div class="card__head"><h2 class="card__title">Photo library</h2>
+              <label class="btn-primary">${icon('upload', 16)}<span id="upload-label">Upload photos</span><input type="file" accept="image/*,.heic,.heif" multiple hidden data-act-file="library"></label></div>
+            <p class="card__hint">Add as many photos as you like at once. They’re saved straight away, then you place them from any photo frame below (they show first in the picker).${waiting.length ? ` ${waiting.length} uploaded photo${waiting.length === 1 ? ' isn’t' : 's aren’t'} on the website yet:` : ''}</p>
+            ${waiting.length ? `<div class="library-strip">${each(waiting, (p) => `<span class="library-strip__item" title="${h(photoName(p))}">${photoImg(p)}</span>`)}</div>` : ''}
+          </section>
           <section class="card">
             <h2 class="card__title">Moments worth the trip</h2>
             <p class="card__hint">The drifting polaroids on the home page. Add as many as you like: real travellers having fun work best. Each links to the trip in its caption, or the one you pick.</p>
@@ -1051,6 +1093,15 @@
             <div class="slots slots--row">${each(SINGLE_SLOTS, ([k, label, hint, shape]) => slot(k, d[k], label, label + ' · ' + hint, shape))}</div>
           </section>
           ${savebar()}`);
+      },
+      file: {
+        async library(input) {
+          const label = $('#upload-label'), btn = input.closest('label');
+          btn.classList.add('is-busy');
+          await uploadPhotos(input.files, (text) => { label.textContent = text; });
+          input.value = '';
+          redraw();
+        },
       },
       act: Object.assign({}, LIST_ACTS, {
         async addMoment() {
