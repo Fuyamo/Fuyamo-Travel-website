@@ -35,6 +35,7 @@ Options -Indexes
   ExpiresByType image/svg+xml "access plus 1 month"
   ExpiresByType font/woff2 "access plus 1 year"
   ExpiresByType application/pdf "access plus 1 week"
+  ExpiresByType video/mp4 "access plus 1 month"
 </IfModule>
 
 <IfModule mod_deflate.c>
@@ -44,4 +45,5 @@ Options -Indexes
 <IfModule mod_mime.c>
   AddType image/webp .webp
   AddType font/woff2 .woff2
+  AddType video/mp4 .mp4
 </IfModule>

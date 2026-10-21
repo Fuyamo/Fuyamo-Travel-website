@@ -377,7 +377,7 @@
   async function loadLibrary() {
     const tree = (await gh(`/repos/${REPO}/git/trees/${BRANCH}?recursive=1`)).tree;
     S.paths = new Set(tree.filter((t) => t.type === 'blob').map((t) => t.path)); // every file, e.g. to see which trips have a PDF
-    const photos = tree.filter((t) => t.type === 'blob' && /^photos\/.+\.(jpe?g|png|webp|heic|heif)$/i.test(t.path)).map((t) => '/' + t.path);
+    const photos = tree.filter((t) => t.type === 'blob' && /^photos\/.+\.(jpe?g|png|webp|heic|heif|mp4|mov|m4v)$/i.test(t.path)).map((t) => '/' + t.path);
     // Newest uploads first, then everything else by folder.
     return photos.sort((a, b) => (b.startsWith('/photos/uploads/') - a.startsWith('/photos/uploads/')) || (a.startsWith('/photos/uploads/') ? b.localeCompare(a) : a.localeCompare(b, undefined, { numeric: true })));
   }
@@ -404,10 +404,14 @@
     if (/^(https?:|data:|blob:)/.test(src)) return src;
     return SITE + '/assets/photos/' + encodeURIComponent(src);
   }
+  const VIDEO = /\.(mp4|mov|m4v)$/i;
   const photoName = (src) => decodeURIComponent(String(src).split('/').pop()).replace(/\.[a-z]+$/i, '');
   // A photo for a frame or the picker. iPhone HEIC photos only show in Safari; elsewhere the file name shows instead
   // (the website build converts them, so they work on the site).
-  const photoImg = (src) => (/\.hei[cf]$/i.test(src)
+  const isVideo = (src) => VIDEO.test(String(src));
+  const photoImg = (src) => (isVideo(src)
+    ? `<video src="${h(photoUrl(src))}#t=0.5" muted playsinline preload="metadata"></video><span class="media-badge">Video</span>`
+    : /\.hei[cf]$/i.test(src)
     ? `<span class="photo-name">${h(photoName(src))}<small>iPhone photo (HEIC)</small></span><img src="${h(photoUrl(src))}" alt="" loading="lazy" onerror="this.remove()">`
     : `<img src="${h(photoUrl(src))}" alt="" loading="lazy">`);
 
@@ -421,7 +425,11 @@
   // browser can't open are sent as they are; the website build converts them.
   async function preparePhoto(file) {
     let blob = file, ext = (file.name.match(/\.([a-z0-9]+)$/i) || [, 'jpg'])[1].toLowerCase();
-    try {
+    // Videos (Moments) are sent as they are: the website build cuts them to 8 seconds and shrinks them.
+    if (/^video\//.test(file.type) || VIDEO.test(file.name)) {
+      if (file.size > 50e6) throw new Error('That video is too big (over 50 MB). Trim it to a few seconds first.');
+      if (!/^(mp4|mov|m4v)$/.test(ext)) ext = 'mp4';
+    } else try {
       const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
       const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
       const canvas = document.createElement('canvas');
@@ -497,18 +505,18 @@
   // A trip's cover and gallery, which may also be used once somewhere else.
   const tripPhotos = () => new Set((S.trips || []).flatMap((t) => [t.cover].concat(t.gallery || [])).filter(Boolean));
 
-  function pickPhoto(title = 'Choose a photo', current = '') {
+  function pickPhoto(title = 'Choose a photo', current = '', { video = false } = {}) {
     return new Promise((resolve) => {
       const d = dialog(`
         <div class="picker__head"><h2 class="dialog__title">${h(title)}</h2><button class="icon-btn" data-x="close" aria-label="Close">${icon('close')}</button></div>
-        <label class="picker__upload">${icon('upload')}<span><strong>Upload from this device</strong><small>Any size, phone photos are fine. Choose several to add them all to the library.</small></span><input type="file" accept="image/*,.heic,.heif" multiple hidden></label>
+        <label class="picker__upload">${icon('upload')}<span><strong>Upload from this device</strong><small>Any size, phone photos are fine${video ? ', and short videos (the first 8 seconds are used)' : ''}. Choose several to add them all to the library.</small></span><input type="file" accept="image/*,.heic,.heif${video ? ',video/*' : ''}" multiple hidden></label>
         <input class="picker__search" type="search" placeholder="Search photos">
         <div class="picker__grid"><p class="muted">Loading photos…</p></div>`, { wide: true, onClose: (v) => resolve(v || null) });
       const grid = d.el.querySelector('.picker__grid'), search = d.el.querySelector('.picker__search');
       const draw = () => {
         const term = search.value.trim().toLowerCase();
         const uses = photoUses(), trips = tripPhotos(), usedAt = (p) => (p !== current && uses.get(p)) || '';
-        const list = [...S.pending.keys()].concat(S.library || []).filter((p) => !term || p.toLowerCase().includes(term));
+        const list = [...S.pending.keys()].concat(S.library || []).filter((p) => (video || !isVideo(p)) && (!term || p.toLowerCase().includes(term)));
         const tile = (p) => {
           const where = usedAt(p);
           return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : trips.has(p) ? '<span class="picker__used picker__used--trip">Trip photo</span>' : ''}</button>`;
@@ -535,6 +543,7 @@
           draw();
           return;
         }
+        if (!video && (/^video\//.test(files[0].type) || VIDEO.test(files[0].name))) { toast('Videos can only go in Moments.', 'error'); e.target.value = ''; return; }
         grid.innerHTML = '<p class="muted">Preparing the photo…</p>';
         try { d.close(await preparePhoto(files[0])); } catch (err) { toast(err.message, 'error'); draw(); }
       });
@@ -671,7 +680,7 @@
     up(el) { move(el, -1); },
     down(el) { move(el, 1); },
     async pick(el) {
-      const src = await pickPhoto(el.dataset.title, getPath(V.draft, el.dataset.path));
+      const src = await pickPhoto(el.dataset.title, getPath(V.draft, el.dataset.path), { video: /^moments\./.test(el.dataset.path) });
       if (src) { setPath(V.draft, el.dataset.path, src); markDirty(); redraw(); }
     },
   };
@@ -1065,13 +1074,13 @@
           <p class="intro-text">Choose a section’s photo to change it. Trip photos are under <a href="#/trips">Trips</a>.</p>
           <section class="card">
             <div class="card__head"><h2 class="card__title">Photo library</h2>
-              <label class="btn-primary">${icon('upload', 16)}<span id="upload-label">Upload photos</span><input type="file" accept="image/*,.heic,.heif" multiple hidden data-act-file="library"></label></div>
-            <p class="card__hint">Add as many photos as you like at once. They’re saved straight away, then you place them from any photo frame below (they show first in the picker).${waiting.length ? ` ${waiting.length} uploaded photo${waiting.length === 1 ? ' isn’t' : 's aren’t'} on the website yet:` : ''}</p>
+              <label class="btn-primary">${icon('upload', 16)}<span id="upload-label">Upload photos</span><input type="file" accept="image/*,.heic,.heif,video/*" multiple hidden data-act-file="library"></label></div>
+            <p class="card__hint">Add as many photos (and short videos for Moments) as you like at once. They’re saved straight away, then you place them from any photo frame below (they show first in the picker).${waiting.length ? ` ${waiting.length} uploaded photo${waiting.length === 1 ? ' isn’t' : 's aren’t'} on the website yet:` : ''}</p>
             ${waiting.length ? `<div class="library-strip">${each(waiting, (p) => `<span class="library-strip__item" title="${h(photoName(p))}">${photoImg(p)}</span>`)}</div>` : ''}
           </section>
           <section class="card">
             <h2 class="card__title">Moments worth the trip</h2>
-            <p class="card__hint">The drifting polaroids on the home page. Add as many as you like: real travellers having fun work best. Each links to the trip in its caption, or the one you pick.</p>
+            <p class="card__hint">The drifting polaroids on the home page. Add as many as you like: real travellers having fun work best. Short videos work too: they play silently on a loop (the first 8 seconds). Each links to the trip in its caption, or the one you pick.</p>
             <div class="moments">${each(d.moments, (m, i) => `<div class="moment">
               ${slot(`moments.${i}.image`, m.image, '', 'Moment photo')}
               ${text(`moments.${i}.caption`, m.caption, 'placeholder="Caption, e.g. Zanzibar"')}
@@ -1105,7 +1114,7 @@
       },
       act: Object.assign({}, LIST_ACTS, {
         async addMoment() {
-          const src = await pickPhoto('New moment');
+          const src = await pickPhoto('New moment', '', { video: true });
           if (!src) return;
           V.draft.moments.push({ image: src, caption: '', trip: '' });
           markDirty(); redraw();

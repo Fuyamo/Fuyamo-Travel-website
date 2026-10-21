@@ -167,7 +167,11 @@ const PHOTO_SIZES = { // longest side in px
   birthday_popup: 1000, yamo_passport: 800, moments: 640, intro: 600,
 };
 
-const slugify = (name) => name.replace(PHOTO_FILE, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// Moments can also be short videos (from a phone is fine).
+const VIDEO_FILE = /\.(mp4|mov|m4v)$/i;
+const VIDEO_SECONDS = 8; // longer clips are cut to their first 8 seconds
+
+const slugify = (name) => name.replace(PHOTO_FILE, '').replace(VIDEO_FILE, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // Upright, at most maxPx on the longest side, as JPEG (macOS ImageIO, which also reads iPhone HEIC photos).
 function saveJpeg(src, out, maxPx, quality) {
@@ -196,6 +200,24 @@ function publishPhoto(siteDir, src, rel, maxPx, quality) {
   return out;
 }
 
+// Publishes one video as an MP4 shrunk for the web (macOS avconvert), plus a still from it as the poster that shows
+// until it plays (Quick Look). Returns their addresses inside site/.
+function publishVideo(siteDir, src, rel) {
+  const out = rel + '.mp4', poster = rel + '.jpg', dest = siteDir + '/' + out, still = siteDir + '/' + poster;
+  if (sh(`[ ${q(dest)} -nt ${q(src)} ] && echo fresh || echo stale`) === 'stale') {
+    sh('mkdir -p ' + q(dirname(dest)));
+    sh(`avconvert -s ${q(src)} -o ${q(dest + '.tmp.mp4')} -p Preset960x540 --duration ${VIDEO_SECONDS} --replace >/dev/null && mv ${q(dest + '.tmp.mp4')} ${q(dest)}`);
+  }
+  if (sh(`[ ${q(still)} -nt ${q(dest)} ] && echo fresh || echo stale`) === 'stale') {
+    const tmp = dest + '.still';
+    sh(`rm -rf ${q(tmp)} && mkdir -p ${q(tmp)} && qlmanage -t -s 900 -o ${q(tmp)} ${q(dest)} >/dev/null 2>&1; true`);
+    const png = tmp + '/' + dest.split('/').pop() + '.png';
+    if (exists(png)) saveJpeg(png, still, 900, 0.78);
+    sh(`rm -rf ${q(tmp)}`);
+  }
+  return { video: out, poster: exists(still) ? poster : '' };
+}
+
 // Keeps track of the photos published in this build, so the ones no longer used can be removed at the end.
 function photoPublisher(root, notes) {
   const siteDir = root + '/site', made = new Set();
@@ -208,6 +230,22 @@ function photoPublisher(root, notes) {
       PHOTO_SIZES[section], section === 'moments' ? 0.62 : 0.72);
     made.add(out);
     return out;
+  };
+  // A video (Moments only): { video, poster }, both empty if it couldn't be used.
+  publish.video = (src, section, where) => {
+    const file = root + '/' + String(src).replace(/^\//, '');
+    if (!exists(file)) { notes.push(`${where}: the video ${src} isn't in the photos folder.`); return { video: '', poster: '' }; }
+    try {
+      const v = publishVideo(siteDir, file, 'assets/img/' + section + '/' + slugify(src.replace(/^\/?photos\//, '')));
+      made.add(v.video);
+      if (v.poster) made.add(v.poster);
+      const mb = Number(sh(`stat -f%z ${q(siteDir + '/' + v.video)}`)) / 1e6;
+      if (mb > 6) notes.push(`${where}: the video is ${mb.toFixed(1)} MB on the website. A shorter clip would load faster.`);
+      return v;
+    } catch (err) {
+      notes.push(`${where}: couldn't use the video ${src} (${err.message}).`);
+      return { video: '', poster: '' };
+    }
   };
   publish.cleanUp = () => {
     sh(`cd ${q(siteDir)} && find assets/img -type f 2>/dev/null; true`).split(/\r|\n/).filter(Boolean).forEach((file) => {
@@ -238,7 +276,12 @@ function loadContent(root, photo, notes) {
     .forEach((k) => { headers[k] = photo(P.headers[k], 'headers', 'Photos → Page headers → ' + k); });
   const photos = {
     headers, intro: list(P.intro, 'intro', 'Intro pills', 3), why: list(P.why, 'why', 'Why cards', 5),
-    moments: (P.moments || []).map((m, i) => ({ src: photo(m.image, 'moments', 'Photos → Moments ' + (i + 1)), caption: m.caption || '', trip: m.trip || '' })),
+    moments: (P.moments || []).map((m, i) => {
+      const where = 'Photos → Moments ' + (i + 1), about = { caption: m.caption || '', trip: m.trip || '' };
+      if (!VIDEO_FILE.test(m.image || '')) return Object.assign({ src: photo(m.image, 'moments', where) }, about);
+      const v = photo.video(m.image, 'moments', where);
+      return Object.assign({ src: v.poster, video: v.video }, about);
+    }),
     about: list(P.about, 'about', 'About', 2), services: list(P.services, 'services', 'Services', 3),
     how_to_book: photo(P.how_to_book, 'how_to_book', 'Photos → How to book'),
     birthday_popup: photo(P.birthday_popup, 'birthday_popup', 'Photos → Birthday popup'),

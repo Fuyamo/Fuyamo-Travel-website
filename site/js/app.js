@@ -350,6 +350,20 @@
 
   // The destination box takes any place. As you type it suggests matching trips (arrow keys, Enter and Escape work);
   // somewhere we don't go yet gets "Plan a trip to …", which opens the "leave your number" card.
+  // Video moments load and play only while on screen, and not at all for people who prefer less motion or save data
+  // (they see the still).
+  function playMoments() {
+    const videos = document.querySelectorAll('video[data-video]');
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches || (navigator.connection && navigator.connection.saveData);
+    if (!videos.length || calm || !('IntersectionObserver' in window)) return;
+    const watch = new IntersectionObserver((entries) => entries.forEach(({ target: video, isIntersecting }) => {
+      if (!isIntersecting) { video.pause(); return; }
+      if (!video.getAttribute('src')) video.src = video.dataset.video;
+      video.play().catch(() => {});
+    }), { rootMargin: '200px' });
+    videos.forEach((video) => watch.observe(video));
+  }
+
   function setupSearch() {
     const input = cbEl('find-dest'), list = cbEl('find-list');
     let active = -1;
@@ -524,6 +538,7 @@
         intro.classList.add('is-in');
         observer.disconnect();
       }, { threshold: 0.35 }).observe(intro);
+      playMoments();
       setupSearch();
       fitReviews();
       document.fonts.ready.then(fitReviews);

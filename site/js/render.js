@@ -429,7 +429,11 @@ window.FUYAMO_RENDER = (function (C) {
   const momentCards = (copy) => each(C.MOMENTS, (m, i) => {
     const [rot, y] = MOMENT_TILT[i % MOMENT_TILT.length];
     const trip = matchTrips(m.trip || m.caption)[0];
-    return `<a href="${trip ? trip.href : link('trips')}" class="polaroid" style="--rot:${rot};--y:${y}"${copy ? ' aria-hidden="true" tabindex="-1"' : ''}><div class="media polaroid__img">${cover(m.src, copy ? '' : 'Fuyamo travellers: ' + m.caption)}</div><div class="polaroid__cap">${pin()}${esc(m.caption)}</div></a>`;
+    // A video moment shows its poster and loads only once it scrolls into view (app.js), silent and looping.
+    const media = m.video
+      ? `<video class="cover" muted loop playsinline preload="none"${m.src ? ` poster="${esc(m.src)}"` : ''} data-video="${esc(m.video)}"${copy ? '' : ` aria-label="${esc('Fuyamo travellers: ' + m.caption)}"`}></video>`
+      : cover(m.src, copy ? '' : 'Fuyamo travellers: ' + m.caption);
+    return `<a href="${trip ? trip.href : link('trips')}" class="polaroid" style="--rot:${rot};--y:${y}"${copy ? ' aria-hidden="true" tabindex="-1"' : ''}><div class="media polaroid__img">${media}</div><div class="polaroid__cap">${pin()}${esc(m.caption)}</div></a>`;
   });
 
   // The next four departures from `today` (or the first four, once the season has passed).
