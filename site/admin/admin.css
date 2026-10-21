@@ -415,3 +415,9 @@ label.is-busy { pointer-events: none; opacity: .7; }
 .rows .row__text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sub { font: 500 13px/1.3 var(--sans); color: var(--muted); margin: 0 0 8px; }
 .dialog form .grid-2 { gap: 0 14px; }
+
+/* Reviews are shown as read-only quotes (they're Google reviews, so their words don't change). */
+.review-quote { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.review-quote__stars { color: #E8A317; letter-spacing: 2px; }
+.review-quote blockquote { margin: 0; font: 400 15px/1.55 var(--sans); white-space: pre-line; }
+.review-quote small { color: var(--muted); }

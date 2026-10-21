@@ -133,6 +133,31 @@
     });
   }
 
+  // A new review, copied from Google: { name, when, rating, trip, text } or null.
+  function askReview() {
+    return new Promise((resolve) => {
+      const now = new Date();
+      const d = dialog(`<h2 class="dialog__title">Add a review from Google</h2>
+        <p class="dialog__text">Copy it exactly as it is on Google. Its words can’t be changed after this.</p>
+        <div class="grid-2">
+          <label class="field"><span class="field__label">Name (first name and initial)</span><input data-k="name" placeholder="Lucky M."></label>
+          <label class="field"><span class="field__label">When</span><input data-k="when" value="${h(MONTHS[now.getMonth()] + ' ' + now.getFullYear())}"></label>
+        </div>
+        <label class="field"><span class="field__label">Stars</span><select data-k="rating">${each([5, 4, 3, 2, 1], (n) => `<option value="${n}">${'★'.repeat(n)}</option>`)}</select></label>
+        <label class="field"><span class="field__label">The review, pasted from Google</span><textarea data-k="text" rows="5"></textarea></label>
+        <div class="dialog__actions"><button class="btn" data-x="no">Cancel</button><button class="btn-primary" data-x="yes">Add review</button></div>`,
+      { onClose: (v) => resolve(v || null) });
+      const val = (k) => d.el.querySelector(`[data-k="${k}"]`).value.trim();
+      d.el.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-x]');
+        if (!b) return;
+        if (b.dataset.x === 'no') { d.close(null); return; }
+        if (!val('name') || !val('text')) { toast('Add the name and the review text.', 'error'); return; }
+        d.close({ name: val('name'), when: val('when'), rating: Number(val('rating')), trip: '', text: d.el.querySelector('[data-k="text"]').value.trim() });
+      });
+    });
+  }
+
   function askText(title, label, value = '') {
     return new Promise((resolve) => {
       const d = dialog(`<h2 class="dialog__title">${h(title)}</h2>
@@ -1320,25 +1345,23 @@
               ${field('“Leave a review” link', text('link', d.link))}
             </div>
           </section>
-          <div class="row-head"><h2 class="card__title">Reviews <small>Newest first, as written on Google</small></h2>
-            <button class="btn" data-act="addReview">${icon('plus', 16)} Add a review</button></div>
+          <div class="row-head"><h2 class="card__title">Reviews <small>Word for word from Google, newest first</small></h2>
+            <button class="btn" data-act="addReview">${icon('plus', 16)} Add a review from Google</button></div>
+          <p class="card__hint">The website shows these as Google reviews, so their words can’t be changed here. You choose which show (remove one to take it off the website), their order and the trip they’re about.</p>
           ${each(d.reviews, (r, i) => `<section class="card item">
-            <div class="grid-4">
-              ${field('Name', text(`reviews.${i}.name`, r.name, 'placeholder="Lucky M."'))}
-              ${field('When', text(`reviews.${i}.when`, r.when, 'placeholder="Jan 2026"'))}
-              ${field('Stars', `<select data-bind="reviews.${i}.rating" data-number>${each([5, 4, 3, 2, 1], (n) => `<option value="${n}"${+r.rating === n ? ' selected' : ''}>${'★'.repeat(n)}</option>`)}</select>`)}
-              ${field('Trip', text(`reviews.${i}.trip`, r.trip, 'placeholder="Optional, e.g. MOZAMBIQUE"'))}
-            </div>
-            ${field('Review', area(`reviews.${i}.text`, r.text, 3))}
+            <div class="review-quote"><span class="review-quote__stars" aria-label="${+r.rating} stars">${'★'.repeat(+r.rating || 5)}</span>
+              <blockquote>${h(r.text)}</blockquote><small>${h(r.name)} · ${h(r.when)}</small></div>
+            <div class="grid-2">${field('Trip', text(`reviews.${i}.trip`, r.trip, 'placeholder="Optional, e.g. MOZAMBIQUE"'))}</div>
             ${rowTools('reviews', i, d.reviews.length)}</section>`)}
           ${savebar()}`);
       },
       act: Object.assign({}, LIST_ACTS, {
-        addReview() {
-          V.draft.reviews.unshift({ name: '', when: MONTHS[new Date().getMonth()] + ' ' + new Date().getFullYear(), rating: 5, trip: '', text: '' });
+        // A review is pasted exactly as it is on Google; after that its words can't be edited.
+        async addReview() {
+          const r = await askReview();
+          if (!r) return;
+          V.draft.reviews.unshift(r);
           markDirty(); redraw();
-          const first = document.querySelector('[data-bind="reviews.0.name"]');
-          if (first) first.focus();
         },
         async save(btn) {
           const d = V.draft;
