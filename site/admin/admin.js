@@ -1402,6 +1402,25 @@
   }
   const rangeOf = (days, back = 0) => ({ startDate: (days * (back + 1)) + 'daysAgo', endDate: back ? (days * back + 1) + 'daysAgo' : 'today' });
   const fmtNum = (n) => Math.round(n).toLocaleString('en-ZA');
+  // Where visits came from, by name: the utm_source on a link (e.g. ?utm_source=instagram) or the site that sent them.
+  // Variants such as l.instagram.com or m.facebook.com count as one. rows: [sessionSource, channel group] → count.
+  const SOURCES = [[/instagram/, 'Instagram'], [/tiktok/, 'TikTok'], [/facebook|^fb$/, 'Facebook'], [/whatsapp|wa\.me/, 'WhatsApp'],
+    [/linkedin|lnkd/, 'LinkedIn'], [/youtube/, 'YouTube'], [/^(t\.co|twitter|x|x\.com)$/, 'X (Twitter)'], [/pinterest/, 'Pinterest'],
+    [/yamo/, 'Yamo'], [/bing/, 'Bing'], [/chatgpt|openai|perplexity|claude|gemini|copilot/, 'AI assistants']];
+  function bySource(rows) {
+    const totals = new Map();
+    rows.forEach(({ d: [source, group], m: [n] }) => {
+      const src = String(source).toLowerCase();
+      const named = SOURCES.find(([re]) => re.test(src));
+      const name = named ? named[1] + (/^Paid/.test(group) ? ' ads' : '')
+        : /google/.test(src) ? (/^Paid/.test(group) ? 'Google ads' : 'Google search')
+          : src === '(direct)' ? 'Typed the address (or a link without a tag)'
+            : group === 'Email' ? 'Email' : src === '(not set)' ? 'Other' : src;
+      totals.set(name, (totals.get(name) || 0) + n);
+    });
+    return [...totals].map(([label, v]) => ({ label, v })).sort((a, b) => b.v - a.v).slice(0, 8);
+  }
+  const SOURCE_DIMS = [{ name: 'sessionSource' }, { name: 'sessionDefaultChannelGroup' }];
   const change = (a, b) => (b ? Math.round(((a - b) / b) * 100) : null);
   const changeTag = (a, b) => { const c = change(a, b); return c == null ? '' : `<span class="delta ${c >= 0 ? 'delta--up' : 'delta--down'}">${c >= 0 ? '+' : ''}${c}%</span>`; };
   const SEAT = [['reserve_seat', 'Reserve seat'], ['secure_seat', 'Secure seat']];
@@ -1476,7 +1495,7 @@
         gaReport({ dateRanges: [r, rangeOf(days, 1)], metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }, { name: 'averageSessionDuration' }] }),
         gaReport({ dateRanges: [r], dimensions: [{ name: 'date' }], metrics: [{ name: 'activeUsers' }], orderBys: [{ dimension: { dimensionName: 'date' } }] }),
         gaReport({ dateRanges: [r], dimensions: [{ name: 'pagePath' }], metrics: [{ name: 'screenPageViews' }], orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }], limit: 10 }),
-        gaReport({ dateRanges: [r], dimensions: [{ name: 'sessionDefaultChannelGroup' }], metrics: [{ name: 'sessions' }], orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 6 }),
+        gaReport({ dateRanges: [r], dimensions: SOURCE_DIMS, metrics: [{ name: 'sessions' }], orderBys: [{ metric: { metricName: 'sessions' }, desc: true }], limit: 40 }),
         gaReport({ dateRanges: [r], dimensions: [{ name: 'deviceCategory' }], metrics: [{ name: 'activeUsers' }], orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }] }),
         gaReport({ dateRanges: [r], dimensions: [{ name: 'country' }], metrics: [{ name: 'activeUsers' }], orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }], limit: 6 }),
         seatTest(days),
@@ -1486,7 +1505,6 @@
       const prev = totals.find((x) => x.d[0] === 'date_range_1') || { m: [0, 0, 0, 0] };
       const mins = (s) => Math.floor(s / 60) + ':' + pad(Math.round(s % 60));
       const sum = (rows) => rows.reduce((s, x) => s + x.m[0], 0);
-      const channelNames = { 'Organic Search': 'Google search', Direct: 'Typed the address', 'Organic Social': 'Social media', Referral: 'Other websites', 'Paid Search': 'Google ads', 'Paid Social': 'Social ads', Email: 'Email', Unassigned: 'Other' };
       const leader = seat[0].rate === seat[1].rate ? null : seat[0].rate > seat[1].rate ? seat[0] : seat[1];
       const enough = seat.every((x) => x.clicks >= 100);
       page('Analytics', `
@@ -1507,18 +1525,18 @@
         <section class="card" id="leads-card"><h2 class="card__title">Enquiries from the website</h2>${loading()}</section>
         <div class="grid-2">
           <section class="card"><h2 class="card__title">Most viewed pages</h2>${bars(pages.map((x) => ({ label: pageName(x.d[0]), v: x.m[0] })), pages[0] ? pages[0].m[0] : 0)}</section>
-          <section class="card"><h2 class="card__title">How people found you</h2>${bars(channels.map((x) => ({ label: channelNames[x.d[0]] || x.d[0], v: x.m[0] })), sum(channels))}</section>
+          <section class="card"><h2 class="card__title">How people found you</h2>${bars(bySource(channels), sum(channels))}</section>
           <section class="card"><h2 class="card__title">Devices</h2>${bars(devices.map((x) => ({ label: x.d[0] ? x.d[0][0].toUpperCase() + x.d[0].slice(1) : 'Other', v: x.m[0] })), sum(devices))}</section>
           <section class="card"><h2 class="card__title">Countries</h2>${bars(countries.map((x) => ({ label: x.d[0], v: x.m[0] })), sum(countries))}</section>
         </div>`, { actions: ranges });
-      leadsCard(r, cur.m[0], channelNames);
+      leadsCard(r, cur.m[0]);
     } catch (err) {
       page('Analytics', problem(err), { actions: ranges });
     }
   }
 
   // Website enquiries (the generate_lead event, sent by every form since 20 Oct 2026): how many, and from where.
-  async function leadsCard(r, visitors, channelNames) {
+  async function leadsCard(r, visitors) {
     const box = $('#leads-card');
     if (!box) return;
     const filter = { filter: { fieldName: 'eventName', stringFilter: { value: 'generate_lead' } } };
@@ -1527,7 +1545,7 @@
       const waFilter = { filter: { fieldName: 'eventName', stringFilter: { value: 'click_whatsapp' } } };
       const [byPage, byChannel, wa] = await Promise.all([
         gaReport({ dateRanges: [r], dimensions: [{ name: 'pagePath' }], metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 8 }),
-        gaReport({ dateRanges: [r], dimensions: [{ name: 'sessionDefaultChannelGroup' }], metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 6 }),
+        gaReport({ dateRanges: [r], dimensions: SOURCE_DIMS, metrics: [{ name: 'eventCount' }], dimensionFilter: filter, orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }], limit: 40 }),
         gaReport({ dateRanges: [r], metrics: [{ name: 'eventCount' }], dimensionFilter: waFilter }).catch(() => []),
       ]);
       const total = sum(byPage), waTaps = sum(wa);
@@ -1536,7 +1554,7 @@
         ${total ? `<p class="card__hint">${fmtNum(total)} ${total === 1 ? 'enquiry' : 'enquiries'}${visitors ? `, from ${(total / visitors * 100).toFixed(1)}% of visitors` : ''}. Counted since 20 Oct 2026.${waLine}</p>
         <div class="grid-2">
           <div><h3 class="sub">From these pages</h3>${bars(byPage.map((x) => ({ label: pageName(x.d[0]), v: x.m[0] })), byPage[0] ? byPage[0].m[0] : 0)}</div>
-          <div><h3 class="sub">Where those visitors came from</h3>${bars(byChannel.map((x) => ({ label: channelNames[x.d[0]] || x.d[0], v: x.m[0] })), sum(byChannel))}</div>
+          <div><h3 class="sub">Where those visitors came from</h3>${bars(bySource(byChannel), sum(byChannel))}</div>
         </div>` : `<p class="muted">No enquiries in this period yet. Every form sent from the website is counted from 20 Oct 2026.${waLine}</p>`}`;
     } catch (err) {
       box.innerHTML = `<h2 class="card__title">Enquiries from the website</h2><p class="muted">${h(err.message)}</p>`;

@@ -426,8 +426,8 @@ window.FUYAMO_RENDER = (function (C) {
   // "Moments worth the trip": one polaroid per photo chosen in the admin (Photos → Moments), linked to the trip its caption names (or the
   // [word] in its file name). The row drifts sideways, so it's written twice (the copy hidden from screen readers)
   // to loop without a gap.
-  const momentCards = (copy) => each(C.MOMENTS, (m, i) => {
-    const [rot, y] = MOMENT_TILT[i % MOMENT_TILT.length];
+  const momentCards = (list, copy, row) => each(list, (m, i) => {
+    const [rot, y] = MOMENT_TILT[(i + row * 3) % MOMENT_TILT.length];
     const trip = matchTrips(m.trip || m.caption)[0];
     // A video moment shows its poster and loads only once it scrolls into view (app.js), silent and looping.
     const media = m.video
@@ -435,6 +435,12 @@ window.FUYAMO_RENDER = (function (C) {
       : cover(m.src, copy ? '' : 'Fuyamo travellers: ' + m.caption);
     return `<a href="${trip ? trip.href : link('trips')}" class="polaroid" style="--rot:${rot};--y:${y}"${copy ? ' aria-hidden="true" tabindex="-1"' : ''}><div class="media polaroid__img">${media}</div><div class="polaroid__cap">${pin()}${esc(m.caption)}</div></a>`;
   });
+
+  // Eight or more moments make two rows, drifting in opposite directions.
+  function momentRows() {
+    const n = C.MOMENTS.length, half = Math.ceil(n / 2);
+    return n >= 8 ? [C.MOMENTS.slice(0, half), C.MOMENTS.slice(half)] : [C.MOMENTS];
+  }
 
   // The next four departures from `today` (or the first four, once the season has passed).
   function upcoming(today) {
@@ -533,7 +539,7 @@ window.FUYAMO_RENDER = (function (C) {
 
       ${C.MOMENTS.length ? `<section class="moments">
         <div class="center-head"><h2 class="title-xl balance">Moments worth<br>the trip.</h2></div>
-        <div class="moments__row"><div class="moments__track">${momentCards(false)}${momentCards(true)}</div></div>
+        ${each(momentRows(), (list, row) => `<div class="moments__row${row ? ' moments__row--back' : ''}"><div class="moments__track" style="--n:${list.length}">${momentCards(list, false, row)}${momentCards(list, true, row)}</div></div>`)}
       </section>` : ''}
 
       <section class="wrap destinations">
