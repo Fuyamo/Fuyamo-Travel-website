@@ -17,7 +17,7 @@ Photos can be any size, straight from a phone. The site shrinks them and turns t
 
 **Signing in** is with the team's code. The first time, the admin asks for a GitHub token and a code. The token is stored on GitHub locked with the code (`admin/key.json`), so after that people only need the code. Settings has "Change the sign-in code" and "Replace GitHub access" for when the token expires (about once a year).
 
-**Analytics** needs a one-time Google setup (Settings → Google Analytics explains the steps). After that, each person sees the numbers by signing in with a Google account that has access to the site's Google Analytics.
+**No Google sign-in.** Analytics and Enquiries come through the enquiries script (below), which runs as info@fuyamo.co.za. The admin proves who it is with its GitHub access: the script asks GitHub whether that access can edit the website, so anyone signed in with the team code can see them. Analytics needs the script's advanced service **Google Analytics Data API** (Apps Script → Services) and the property ID in Settings → Google Analytics.
 
 ## What's in this folder
 
@@ -75,7 +75,7 @@ The corporate form and the email option of the "Leave your number" card have an 
 - **Spam:** a hidden field catches simple bots, and more than 30 messages in 10 minutes are refused.
 - **Statuses in the admin:** New → **Proposal with client** (Quote with client for corporate; the client has it, whether Plunk or Yamo emailed it) → Booked or Not going ahead. Enquiries with Yamo also show where they are on Yamo: **Sent to Yamo**, **Being built on Yamo**, **Proposal opened** (Yamo records when the client opens it), **Changes requested**, **Accepted on Yamo** (Yamo's status is kept in the sheet's "Yamo status" column by the hourly check). The list filters: All, New, At Yamo, With client, Booked. The sheet itself still stores "Proposal sent".
 - **If Google is slow:** the admin retries loading and Yamo checks up to three times. A save is never sent twice; if its answer gets lost, the admin re-reads the enquiry to see whether it saved.
-- **In the admin:** Enquiries lists everything, newest first. Open one to email, WhatsApp or call them, paste the Yamo link of the trip you built and press **Send proposal**, set the status (New, Proposal sent, Booked, Not going ahead) and keep notes. It uses the same Google sign-in as Analytics, and only fuyamo.co.za accounts get in.
+- **In the admin:** Enquiries lists everything, newest first. Open one to email, WhatsApp or call them, paste the Yamo link of the trip you built and press **Send proposal**, set the status (New, Proposal sent, Booked, Not going ahead) and keep notes. Only people signed in to the admin get in: the script checks the admin's GitHub access with GitHub (it must be able to push to the website's repository) and remembers the answer for 10 minutes.
 - **The sheet itself** can be opened, sorted and filtered like any spreadsheet. Don't rename the Enquiries tab or reorder its columns.
 
 ### Plunk (emails to customers)

@@ -1114,67 +1114,31 @@
     V.redraw();
   }
 
-  // ---------- Analytics (Google Analytics Data API, with the viewer's Google sign-in) ----------
+  // ---------- Analytics (Google Analytics Data API, read by the enquiries script) ----------
 
-  const GA = { token: '', expires: 0, range: 28, cache: new Map() };
-  const GOOGLE_KEY = 'fuyamo-admin-google';
-  function keepGoogle() {
-    try { if (GA.token) sessionStorage.setItem(GOOGLE_KEY, JSON.stringify({ token: GA.token, expires: GA.expires })); else sessionStorage.removeItem(GOOGLE_KEY); } catch (err) { /* no storage */ }
-  }
-  try { Object.assign(GA, JSON.parse(sessionStorage.getItem(GOOGLE_KEY) || '{}')); } catch (err) { /* no storage */ }
-  const gaConfigured = () => !!(S.settings && S.settings.ga && S.settings.ga.property && S.settings.ga.client);
-  const gaConnected = () => GA.token && Date.now() < GA.expires;
-
-  // One load per script: a second call waits for the same load (it may still be on its way).
-  const scripts = new Map();
-  function loadScript(src) {
-    if (!scripts.has(src)) {
-      scripts.set(src, new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = src; s.async = true; s.onload = resolve;
-        s.onerror = () => { scripts.delete(src); s.remove(); reject(new Error('Couldn’t reach Google.')); };
-        document.head.appendChild(s);
-      }));
-    }
-    return scripts.get(src);
-  }
-  // Google's sign-in code is loaded as soon as the admin opens, so a click on "Sign in with Google" opens Google's
-  // window straight away. (Loading it on the click took long enough for Chrome to block the window as a pop-up.)
-  const GSI = 'https://accounts.google.com/gsi/client';
-  const preloadGoogle = () => { if (!MOCK && gaConfigured()) loadScript(GSI).catch(() => {}); };
-  async function gaConnect() {
-    if (MOCK) { GA.token = 'mock'; GA.expires = Date.now() + 3600e3; return; }
-    if (!(window.google && window.google.accounts && window.google.accounts.oauth2)) await loadScript(GSI);
-    await new Promise((resolve, reject) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: S.settings.ga.client,
-        scope: 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/userinfo.email',
-        callback: (r) => {
-          if (r.error) { reject(new Error(r.error_description || r.error)); return; }
-          GA.token = r.access_token;
-          GA.expires = Date.now() + (r.expires_in - 60) * 1000;
-          keepGoogle();
-          resolve();
-        },
-        error_callback: (e) => reject(new Error(e.message || 'Google sign-in was closed.')),
-      });
-      client.requestAccessToken();
-    });
-  }
-  async function gaReport(body, realtime) {
+  // The enquiries script reads the reports with info@fuyamo.co.za's Google access, so nobody signs in to Google here.
+  const GA = { range: 28, cache: new Map(), queue: null };
+  const gaConfigured = () => enqConfigured();
+  // A page asks for several reports at once; they go to the script together, in one call.
+  function gaReport(body, realtime) {
     const key = (realtime ? 'rt' : '') + JSON.stringify(body);
-    if (!realtime && GA.cache.has(key)) return GA.cache.get(key);
-    const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${encodeURIComponent(S.settings.ga.property)}:${realtime ? 'runRealtimeReport' : 'runReport'}`, {
-      method: 'POST', headers: { Authorization: 'Bearer ' + GA.token, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    if (!realtime && GA.cache.has(key)) return Promise.resolve(GA.cache.get(key));
+    if (!GA.queue) { GA.queue = []; setTimeout(gaSend, 0); }
+    return new Promise((resolve, reject) => GA.queue.push({ body, realtime: !!realtime, key, resolve, reject }));
+  }
+  async function gaSend() {
+    const asked = GA.queue;
+    GA.queue = null;
+    let data;
+    try {
+      data = await enqApi({ action: 'analytics', property: (S.settings.ga || {}).property, reports: asked.map((q) => ({ report: q.body, realtime: q.realtime })) });
+    } catch (err) { asked.forEach((q) => q.reject(err)); return; }
+    asked.forEach((q, i) => {
+      const r = (data.results || [])[i] || { error: 'Google Analytics didn’t answer.' };
+      if (r.error) { q.reject(new Error(r.error)); return; }
+      if (!q.realtime) GA.cache.set(q.key, r.rows);
+      q.resolve(r.rows);
     });
-    const data = await res.json();
-    if (!res.ok) {
-      if (res.status === 401) { GA.token = ''; keepGoogle(); }
-      throw new Error(data.error && data.error.message ? data.error.message : 'Google Analytics didn’t answer.');
-    }
-    const rows = (data.rows || []).map((r) => ({ d: (r.dimensionValues || []).map((v) => v.value), m: r.metricValues.map((v) => +v.value) }));
-    if (!realtime) GA.cache.set(key, rows);
-    return rows;
   }
   const rangeOf = (days, back = 0) => ({ startDate: (days * (back + 1)) + 'daysAgo', endDate: back ? (days * back + 1) + 'daysAgo' : 'today' });
   const fmtNum = (n) => Math.round(n).toLocaleString('en-ZA');
@@ -1198,12 +1162,8 @@
   }
 
   function gaSetupCard() {
-    return `<h2 class="card__title">Visitors</h2><p class="muted">Connect Google Analytics to see visitors, top trips and the Reserve vs Secure result here.</p>
+    return `<h2 class="card__title">Visitors</h2><p class="muted">Visitors, top trips and the Reserve vs Secure result come through the enquiries script. Add its address in Settings.</p>
       <a class="btn" href="#/settings">Set it up in Settings</a>`;
-  }
-  function gaConnectCard(where) {
-    return `<h2 class="card__title">Visitors and enquiries</h2><p class="muted">Sign in with your fuyamo.co.za Google account (info@fuyamo.co.za).</p>
-      <button class="btn-primary" data-act="gaConnect" data-where="${where}">Sign in with Google</button>`;
   }
 
   async function gaSummary() {
@@ -1211,7 +1171,6 @@
     if (!box) return;
     await ensure('settings').catch(() => {});
     if (!gaConfigured()) { box.innerHTML = gaSetupCard(); return; }
-    if (!gaConnected()) { box.innerHTML = gaConnectCard('overview'); return; }
     box.innerHTML = '<h2 class="card__title">Last 7 days</h2>' + loading();
     try {
       const [totals, now, seat] = await Promise.all([
@@ -1248,7 +1207,6 @@
     await ensure('settings', 'trips');
     ensure('posts').catch(() => {});
     if (!gaConfigured()) { page('Analytics', `<section class="card">${gaSetupCard()}</section>`); return; }
-    if (!gaConnected()) { page('Analytics', `<section class="card">${gaConnectCard('analytics')}</section>`); return; }
     const days = GA.range;
     const ranges = `<div class="seg">${each([7, 28, 90], (n) => `<button class="${n === days ? 'is-on' : ''}" data-act="range" data-days="${n}">${n} days</button>`)}</div>`;
     page('Analytics', loading(), { actions: ranges });
@@ -1330,7 +1288,7 @@
   const ENQ = { list: null, plunk: false, yamo: false, filter: 'All' };
   const ENQ_STATUSES = ['New', 'Proposal sent', 'Booked', 'Not going ahead'];
   const FORM_LABELS = { corporate: 'Corporate', callback: 'Callback', birthday: 'Birthday offer' };
-  const enqConfigured = () => !!(S.settings && S.settings.enquiries && S.settings.enquiries.url && S.settings.ga && S.settings.ga.client);
+  const enqConfigured = () => !!(S.settings && S.settings.enquiries && S.settings.enquiries.url);
   // The sheet keeps one status list; it reads differently per kind of enquiry. Corporate enquiries get a PDF quote
   // ("Quote sent"); partnerships and opportunities (a corporate form type) aren't quoted at all.
   const isPartner = (e) => e.form === 'corporate' && !!e.info && e.info['Enquiry type'] === 'Partnerships';
@@ -1384,11 +1342,11 @@
     return m[2] === '✓' ? ' Plunk: ' + (PLUNK_WORDS[m[1]] || m[1]) + '.' : ' Plunk couldn’t send: ' + m[3].replace(/\.$/, '') + '.';
   }
 
-  // Every call carries the Google sign-in; the script checks it's a fuyamo.co.za account.
+  // Every call carries the dashboard's GitHub access; the script asks GitHub whether it can edit the website.
   // Google's script sometimes doesn't answer on the first try. Reads, and Send to Yamo (Yamo ignores a repeat), are
   // retried. A save isn't, because it may have gone through and a second one could email the client twice: if its
   // answer is lost, the enquiry is re-read to see whether the change landed.
-  const RETRY = ['list', 'yamo_status', 'yamo_ping', 'yamo_send'];
+  const RETRY = ['list', 'analytics', 'yamo_status', 'yamo_ping', 'yamo_send'];
   async function enqApi(body) {
     if (MOCK) return mockEnquiries(body);
     const tries = RETRY.includes(body.action) ? 3 : 1;
@@ -1399,7 +1357,7 @@
       const stop = tries > 1 ? new AbortController() : null;
       const timer = stop ? setTimeout(() => stop.abort(), 15000) : 0;
       try {
-        const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ token: GA.token }, body)), signal: stop ? stop.signal : undefined });
+        const res = await fetch(S.settings.enquiries.url, { method: 'POST', body: JSON.stringify(Object.assign({ github: S.token }, body)), signal: stop ? stop.signal : undefined });
         data = await res.json();
       } catch (err) { data = null; } finally { clearTimeout(timer); }
     }
@@ -1411,7 +1369,6 @@
       throw new Error('Couldn’t confirm that was saved. Refresh the page to check before trying again.');
     }
     if (!data) throw new Error('Couldn’t reach the enquiries sheet. Check the internet connection and try again.');
-    if (data.auth) { GA.token = ''; keepGoogle(); }
     if (!data.ok) throw new Error(data.error || 'The enquiries sheet didn’t answer.');
     return data;
   }
@@ -1440,17 +1397,12 @@
       <span class="row__text"><strong>${h(e.name)} <em class="tag tag--muted">${h(formLabel(e))}</em></strong><small>${h(ago(e.received))} · ${h(enqAbout(e) || e.email || e.phone)}</small></span>
       ${statusTag(e.status, e)}${icon('chevron', 18)}</a></li>`;
   };
-  function googleCard(where, title) {
-    return `<h2 class="card__title">${h(title)}</h2><p class="muted">Sign in with your fuyamo.co.za Google account (info@fuyamo.co.za).</p>
-      <button class="btn-primary" data-act="gaConnect" data-where="${where}">Sign in with Google</button>`;
-  }
   const enqNotReady = () => `<section class="card"><h2 class="card__title">Enquiries</h2><p class="muted">The enquiries sheet isn’t connected yet. See “Enquiries” in the README.</p></section>`;
 
   async function enquiriesList() {
     page('Enquiries', loading());
     await ensure('settings');
     if (!enqConfigured()) { page('Enquiries', enqNotReady()); return; }
-    if (!gaConnected()) { page('Enquiries', `<section class="card">${googleCard('enquiries', 'Enquiries')}</section>`); return; }
     const list = await loadEnquiries();
     if (!ENQ_FILTERS[ENQ.filter]) ENQ.filter = 'All';
     const count = (s) => list.filter(ENQ_FILTERS[s]).length;
@@ -1471,7 +1423,6 @@
     page('Enquiry', loading(), { back: '#/enquiries' });
     await ensure('settings', 'trips');
     if (!enqConfigured()) { page('Enquiry', enqNotReady(), { back: '#/enquiries' }); return; }
-    if (!gaConnected()) { page('Enquiry', `<section class="card">${googleCard('enquiries', 'Enquiry')}</section>`, { back: '#/enquiries' }); return; }
     if (!ENQ.list || !ENQ.list.some((e) => e.id === id)) await loadEnquiries();
     const e = ENQ.list.find((x) => x.id === id);
     if (!e) { page('Enquiry', '<section class="card"><p class="muted">That enquiry wasn’t found.</p></section>', { back: '#/enquiries' }); return; }
@@ -1644,12 +1595,12 @@
     if (k && V.fields) V.fields[k] = ev.target.value;
   });
 
-  // The overview's "New enquiries" card, once signed in to Google.
+  // The overview's "New enquiries" card.
   async function enqSummary() {
     const box = $('#enq-summary');
     if (!box) return;
     await ensure('settings').catch(() => {});
-    if (!enqConfigured() || !gaConnected()) { box.hidden = true; return; }
+    if (!enqConfigured()) { box.hidden = true; return; }
     box.hidden = false;
     box.innerHTML = '<h2 class="card__title">New enquiries</h2>' + loading();
     try {
@@ -1680,6 +1631,7 @@
       return new Promise((resolve) => setTimeout(() => resolve({ ok: true, yamo: { id: r.yamo, status: 'new', closed: false, bookingId: '' } }), 400));
     }
     if (body.action === 'yamo_ping') return Promise.resolve({ ok: true, agency: 'Fuyamo Travel (test)' });
+    if (body.action === 'analytics') return Promise.resolve({ ok: true, results: body.reports.map(() => ({ rows: [] })) });
     if (body.action === 'yamo_status') {
       const r = mockList.find((x) => x.id === body.id);
       const y = { id: r.yamo, status: 'sent', closed: false, bookingId: '', proposal: { url: 'https://app.yamo.travel/p/mock', sentAt: new Date().toISOString(), openedAt: new Date().toISOString() } };
@@ -1727,18 +1679,11 @@
       </section>
       <section class="card">
         <h2 class="card__title">Google Analytics</h2>
-        <p class="card__hint">Shows the site’s Google Analytics in Overview and Analytics. Each person signs in with their own Google account, which needs access to the Analytics property.</p>
+        <p class="card__hint">Overview and Analytics show the site’s Google Analytics. The enquiries script (below) reads it with info@fuyamo.co.za’s access, so nobody signs in to Google here.</p>
         <form data-form="ga" class="grid-2">
           ${field('Analytics property ID', `<input name="property" value="${h(ga.property || '')}" placeholder="e.g. 456789123" inputmode="numeric">`, 'Google Analytics → Admin → Property details. A number, not the G- ID.')}
-          ${field('Google sign-in client ID', `<input name="client" value="${h(ga.client || '')}" placeholder="….apps.googleusercontent.com">`, 'From Google Cloud (see below).')}
           <div><button class="btn-primary" type="submit">Save</button></div>
         </form>
-        <details class="help"><summary>How to get the client ID</summary><ol>
-          <li>Open <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> with your fuyamo.co.za Google account and create a project called “Fuyamo admin”.</li>
-          <li>APIs &amp; Services → Library → turn on <strong>Google Analytics Data API</strong>.</li>
-          <li>APIs &amp; Services → OAuth consent screen: choose <strong>Internal</strong>, app name “Fuyamo admin”.</li>
-          <li>APIs &amp; Services → Credentials → Create credentials → <strong>OAuth client ID</strong> → Web application. Under Authorized JavaScript origins add <code>https://fuyamo.co.za</code>.</li>
-          <li>Copy the client ID it shows and paste it above.</li></ol></details>
       </section>
       <section class="card">
         <h2 class="card__title">Enquiries</h2>
@@ -1756,7 +1701,6 @@
     V = { act: {
       signout: signOut,
       async yamoPing(el) {
-        if (!gaConnected()) { try { await gaConnect(); } catch (err) { toast(err.message, 'error'); return; } }
         el.disabled = true;
         try { toast('Connected to Yamo as ' + (await enqApi({ action: 'yamo_ping' })).agency + '.'); } catch (err) { toast(err.message, 'error'); }
         el.disabled = false;
@@ -1785,10 +1729,10 @@
       try { await checkToken(f.token.trim(), true); } catch (err) { S.token = old; toast(err.message, 'error'); return; }
       if (await save([{ path: KEY_PATH, text: json(await lockToken(S.token, f.code)) }], 'Admin: replace GitHub access', btn)) { remember(S.token, kept()); form.reset(); }
     } else if (form.dataset.form === 'ga') {
-      const ga = { property: f.property.trim().replace(/^properties\//, ''), client: f.client.trim() };
+      const ga = Object.assign({}, S.settings.ga, { property: f.property.trim().replace(/^properties\//, '') });
       if (ga.property && !/^\d+$/.test(ga.property)) { toast('The property ID is a number, like 456789123 (not the G- measurement ID).', 'error'); return; }
       const settings = Object.assign({}, S.settings, { ga });
-      if (await save([{ path: SETTINGS_PATH, text: json(settings) }], 'Admin: Google Analytics settings', btn)) { S.settings = settings; GA.token = ''; keepGoogle(); }
+      if (await save([{ path: SETTINGS_PATH, text: json(settings) }], 'Admin: Google Analytics settings', btn)) { S.settings = settings; GA.cache.clear(); }
     } else if (form.dataset.form === 'enq') {
       const url = f.url.trim();
       if (url && !/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) { toast('That doesn’t look like an Apps Script web app address (…/exec).', 'error'); return; }
@@ -1858,7 +1802,7 @@
 
   function signOut() {
     forget();
-    S.token = ''; S.user = null; GA.token = ''; keepGoogle(); ENQ.list = null;
+    S.token = ''; S.user = null; GA.cache.clear(); ENQ.list = null;
     ['trips', 'photos', 'faqs', 'reviews', 'posts', 'settings', 'library'].forEach((k) => { S[k] = null; });
     S.dirty = false;
     location.hash = '';
@@ -1901,7 +1845,7 @@
     shell();
     refreshStatus();
     route();
-    ensure('settings').then(preloadGoogle).catch(() => {});
+    ensure('settings').catch(() => {});
   }
 
   // ---------- Events ----------
@@ -1915,11 +1859,6 @@
     if (name === 'signout') { e.preventDefault(); signOut(); return; }
     if (name === 'more') { moreMenu(); return; }
     if (name === 'status') { statusDetails(); return; }
-    if (name === 'gaConnect') {
-      try { await gaConnect(); } catch (err) { toast(err.message, 'error'); return; }
-      if (el.dataset.where === 'overview') { enqSummary(); gaSummary(); } else route();
-      return;
-    }
     if (name === 'range') { GA.range = +el.dataset.days; analyticsView(); return; }
     if (V.act && V.act[name]) { e.preventDefault(); V.act[name](el, e); }
   });
