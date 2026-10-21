@@ -43,10 +43,11 @@ window.FUYAMO_RENDER = (function (C) {
 
   const pin = (size) => '<span class="pin' + (size ? ' pin--' + size : '') + '"></span>';
   // hero: the page's main photo, fetched first; everything else loads lazily.
-  const cover = (src, alt, hero) => '<img class="cover" src="' + esc(src) + '" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"') + '>';
+  // An empty slot (no photo chosen yet) leaves its frame's plain background.
+  const cover = (src, alt, hero) => (src ? '<img class="cover" src="' + esc(src) + '" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"') + '>' : '');
   // Dates like "16–18 Jul 2027" would otherwise break after the dash in narrow cards.
   const keepTogether = (text) => '<span class="nowrap">' + esc(text) + '</span>';
-  const inlinePhoto = (src) => '<span class="inline-photo">' + cover(src) + '</span>';
+  const inlinePhoto = (src) => (src ? '<span class="inline-photo">' + cover(src) + '</span>' : '');
   const icon = (paths, size, stroke) =>
     '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + stroke + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
 
@@ -291,7 +292,7 @@ window.FUYAMO_RENDER = (function (C) {
   // Shown once in a while to people browsing trips (app.js decides when), or straight away with ?offer in the address.
   function birthdayPopup() {
     return `<dialog class="promo-pop" id="promo-pop" aria-labelledby="promo-title">
-  <div class="promo-pop__media">${cover(PHOTO.birthday_popup, '')}</div>
+  ${PHOTO.birthday_popup ? `<div class="promo-pop__media">${cover(PHOTO.birthday_popup, '')}</div>` : ''}
   <div class="promo-pop__body">
     <button type="button" class="callback__close" data-action="promo-close" aria-label="Close">✕</button>
     <form class="promo-pop__form" id="promo-form">
@@ -332,7 +333,7 @@ window.FUYAMO_RENDER = (function (C) {
                 </div>
                 <div class="passport__page">
                   <div class="passport__row"><span>MOMENTS</span><span>NO. 2 / 22</span></div>
-                  <figure class="passport__photo"><img src="${esc(PHOTO.yamo_passport)}" alt="" loading="eager"><figcaption>BILENE · 12–16 FEB</figcaption></figure>
+                  <figure class="passport__photo">${PHOTO.yamo_passport ? `<img src="${esc(PHOTO.yamo_passport)}" alt="" loading="eager">` : '<span class="passport__blank"></span>'}<figcaption>BILENE · 12–16 FEB</figcaption></figure>
                 </div>
               </div>
             </div>`;
@@ -514,7 +515,7 @@ window.FUYAMO_RENDER = (function (C) {
           ${arrows('why-rail', false, '')}
         </div>
         <div class="rail why__rail" id="why-rail">${each(C.WHY, (w) => `
-          <div class="media why-card">
+          <div class="media why-card${w.img ? '' : ' why-card--blank'}">
             ${cover(w.img)}
             <div class="why-card__shade"></div>
             <div class="why-card__body">
@@ -526,10 +527,10 @@ window.FUYAMO_RENDER = (function (C) {
         </div>
       </section>
 
-      <section class="moments">
+      ${C.MOMENTS.length ? `<section class="moments">
         <div class="center-head"><h2 class="title-xl balance">Moments worth<br>the trip.</h2></div>
         <div class="moments__row"><div class="moments__track">${momentCards(false)}${momentCards(true)}</div></div>
-      </section>
+      </section>` : ''}
 
       <section class="wrap destinations">
         <div class="center-head">
@@ -952,7 +953,7 @@ window.FUYAMO_RENDER = (function (C) {
         <h1>${esc(p.title)}</h1>
         <p>${esc(p.intro)}</p>
       </section>
-      <section class="band"><div class="media article-cover">${cover(p.img, p.title, true)}</div></section>
+      ${p.img ? `<section class="band"><div class="media article-cover">${cover(p.img, p.title, true)}</div></section>` : ''}
       <article class="article-body">
         <div class="prose">${p.html}</div>
         <div class="article-cta"><strong>Questions about your trip?</strong><a href="${WA.general}" ${EXT + CALLBACK} class="btn-amber">WhatsApp us →</a></div>

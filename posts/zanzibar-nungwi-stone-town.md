@@ -3,7 +3,7 @@ title: "Zanzibar from South Africa: Nungwi, Stone Town and tips"
 category: Destination guides
 date: 2026-10-13
 updated: 2026-10-21
-image: detail-zanzibar-2.webp
+image: ""
 intro: "Going to Zanzibar from South Africa? Nungwi vs Stone Town, the visa and compulsory insurance, money, the best time to go and how our 6-day trip works."
 ---
 
@@ -33,8 +33,6 @@ What's built into the Nungwi days:
 - **Swimming with turtles.** A gentle, unforgettable first morning in the water.
 - **A sunset dhow cruise.** Nungwi is known for its traditional wooden dhows, and evening sailings are the best way to see the sunset.
 - **Island hopping to Prison Island and Nakupenda.** Prison Island (Changuu) is home to a colony of giant tortoises, some more than a century old. Nakupenda, which means "I love you" in Swahili, is a pure-white sandbank that appears in the middle of the sea. Bring a hat, because there's no shade.
-
-![A clear kayak over Zanzibar's turquoise water, one of the optional extras](/photos/moments/01%20Zanzibar.webp)
 
 ### Stone Town: the old heart of Zanzibar (2 nights)
 
@@ -101,8 +99,6 @@ These aren't included in the trip price, but they're the ones our travellers rav
 - US dollar notes in small denominations
 - Your passport, insurance certificate and travel insurance documents
 - A UK-style plug adapter and a power bank
-
-![Beach time on Zanzibar's white sand](/photos/trips/zanzibar/2.webp)
 
 ## What's included in our Zanzibar trip
 

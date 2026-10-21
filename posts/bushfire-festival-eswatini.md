@@ -2,7 +2,7 @@
 title: "Bushfire Festival 2027: tickets, camping and getting there"
 category: Destination guides
 date: 2026-10-21
-image: /photos/trips/bushfire/1 cover.webp
+image: ""
 intro: "Going to MTN Bushfire 2027 in Eswatini? Getting there from Johannesburg, tickets, the border, camping, what to pack and our all-in festival trip."
 ---
 
@@ -23,8 +23,6 @@ MTN Bushfire is one of Africa's best-loved music festivals: three days of music,
 Bushfire has grown from a small gathering into one of the biggest festivals in southern Africa. The 2026 edition brought more than 23,000 festivalgoers, who call themselves Fire Starters, from over 55 countries, and it was the festival's 14th sold-out year in a row.
 
 The line-up mixes African and international artists across many genres. Beyond the main stage, there's a craft and design market, food from across the region, art installations and workshops. The venue itself, House on Fire, is a quirky open-air arts venue full of sculptures and mosaics, set among the green hills of the Malkerns Valley.
-
-![The main stage at night](/photos/moments/14%20Eswatini.webp)
 
 ## Bushfire 2027 tickets
 
@@ -92,8 +90,6 @@ Late May in the Malkerns Valley means warm, sunny days and cold nights, so the m
 ## Eswatini beyond the festival
 
 The Malkerns Valley is also known for its crafts. Swazi Candles and Gone Rural, which sells handmade baskets and homeware made by women in rural Eswatini, are both nearby and make great gifts. Mlilwane Wildlife Sanctuary, a short drive away, is a peaceful place for walks and cycling among zebra and antelope.
-
-![Festival camping at Bushfire](/photos/trips/bushfire/3.webp)
 
 ## What's included in our Bushfire Festival trip
 

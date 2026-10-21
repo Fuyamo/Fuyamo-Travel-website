@@ -444,7 +444,25 @@
 
   // ---------- Photo picker ----------
 
-  function pickPhoto(title = 'Choose a photo') {
+  // Where each photo is already used. Every photo goes in one place on the site (a trip's own photos also show on
+  // its cards), so the picker won't hand out one that's in use somewhere else.
+  function photoUses() {
+    const uses = new Map();
+    const add = (src, where) => { if (!uses.has(src)) uses.set(src, where); };
+    const walk = (v, where) => {
+      if (typeof v === 'string') {
+        if (/^\/photos\//.test(v)) add(v, where);
+        else (v.match(/\]\((\/photos\/[^)\s]+)\)/g) || []).forEach((m) => add(decodeURIComponent(m.slice(2, -1)), where));
+      } else if (v && typeof v === 'object') Object.values(v).forEach((x) => walk(x, where));
+    };
+    if (V && V.draft) walk(V.draft, 'on this page');
+    walk(S.photos, 'in Photos');
+    (S.trips || []).forEach((t) => walk([t.cover, t.gallery], 'on the ' + (t.menu_label || t.name) + ' trip'));
+    (S.posts || []).forEach((p) => walk([p.image, p.body], 'in the article “' + p.title + '”'));
+    return uses;
+  }
+
+  function pickPhoto(title = 'Choose a photo', current = '') {
     return new Promise((resolve) => {
       const d = dialog(`
         <div class="picker__head"><h2 class="dialog__title">${h(title)}</h2><button class="icon-btn" data-x="close" aria-label="Close">${icon('close')}</button></div>
@@ -454,15 +472,21 @@
       const grid = d.el.querySelector('.picker__grid'), search = d.el.querySelector('.picker__search');
       const draw = () => {
         const term = search.value.trim().toLowerCase();
-        const list = [...S.pending.keys()].concat(S.library || []).filter((p) => !term || p.toLowerCase().includes(term));
-        grid.innerHTML = list.length ? each(list, (p) => `<button class="picker__item" data-src="${h(p)}" title="${h(photoName(p))}"><img src="${h(photoUrl(p))}" alt="" loading="lazy"></button>`) : '<p class="muted">No photos found.</p>';
+        const uses = photoUses(), usedAt = (p) => (p !== current && uses.get(p)) || '';
+        const list = [...S.pending.keys()].concat(S.library || []).filter((p) => !term || p.toLowerCase().includes(term))
+          .sort((a, b) => !!usedAt(a) - !!usedAt(b)); // photos still free first
+        grid.innerHTML = list.length ? each(list, (p) => {
+          const where = usedAt(p);
+          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}"><img src="${h(photoUrl(p))}" alt="" loading="lazy">${where ? '<span class="picker__used">Used</span>' : ''}</button>`;
+        }) : '<p class="muted">No photos found.</p>';
       };
-      ensure('library').then(draw).catch((err) => { grid.innerHTML = `<p class="muted">Couldn’t load the photos: ${h(err.message)}</p>`; });
+      Promise.all([ensure('library'), ensure('photos', 'trips', 'posts').catch(() => {})]).then(draw).catch((err) => { grid.innerHTML = `<p class="muted">Couldn’t load the photos: ${h(err.message)}</p>`; });
       search.addEventListener('input', draw);
       d.el.addEventListener('click', (e) => {
         if (e.target.closest('[data-x="close"]')) d.close(null);
         const item = e.target.closest('[data-src]');
-        if (item) d.close(item.dataset.src);
+        if (item && item.dataset.used) toast(`That photo is already used ${item.dataset.used}. Each photo goes in one place, so choose another or upload a new one.`, 'error');
+        else if (item) d.close(item.dataset.src);
       });
       d.el.querySelector('input[type=file]').addEventListener('change', async (e) => {
         const file = e.target.files[0];
@@ -603,7 +627,7 @@
     up(el) { move(el, -1); },
     down(el) { move(el, 1); },
     async pick(el) {
-      const src = await pickPhoto(el.dataset.title);
+      const src = await pickPhoto(el.dataset.title, getPath(V.draft, el.dataset.path));
       if (src) { setPath(V.draft, el.dataset.path, src); markDirty(); redraw(); }
     },
   };

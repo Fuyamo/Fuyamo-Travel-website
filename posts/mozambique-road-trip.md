@@ -3,7 +3,7 @@ title: "Mozambique road trip from Johannesburg: Maputo and Bilene"
 category: Destination guides
 date: 2026-10-13
 updated: 2026-10-21
-image: detail-mozambique-1.webp
+image: ""
 intro: "Your guide to a Mozambique road trip from Johannesburg: the drive and border, passport and malaria advice, money, food and our Maputo and Bilene itinerary."
 ---
 
@@ -50,8 +50,6 @@ Our Maputo city tour takes you through the highlights. Places you'll likely hear
 
 The South Beach experience is included too, so you'll get your first proper beach time in the city. And if you'd like to add the **Fish Market** (Mercado do Peixe), it's a Maputo ritual: choose your prawns, crayfish or fish at the market stalls and have them grilled at a restaurant next door.
 
-![Prawns, peri-peri and salad: lunch in Mozambique](/photos/trips/mozambique/3.webp)
-
 ## Two nights in Bilene
 
 From Maputo we drive about three hours north to Praia do Bilene. Bilene sits on the Uembje Lagoon, a large saltwater lagoon cut off from the Indian Ocean by tall dunes. The water is warm, calm and shallow, so it's perfect for swimming, floating and watersports, even if you're not a strong swimmer.
@@ -65,8 +63,6 @@ The boat cruise to Coco Island is included. Optional extras in Bilene:
 - Horse riding on the beach
 
 Evenings in Bilene are slow: sundowners by the water, grilled fish and peri-peri chicken, and music from the beach bars.
-
-![Our group on the beach at Bilene](/photos/moments/04%20Bilene.webp)
 
 ## Do South Africans need a visa for Mozambique?
 

@@ -272,6 +272,7 @@ address { font-style: normal; }
 /* Phones swipe the cards; the arrow buttons would crowd the heading. */
 @media (max-width: 559.98px) { .why__head .arrows { display: none; } }
 .why-card { flex: 0 0 auto; width: clamp(220px, 20vw, 280px); aspect-ratio: 4/5; scroll-snap-align: start; border-radius: 20px; color: #fff; }
+.why-card--blank { background: #2A2723; }
 .why-card__shade { position: absolute; left: 0; right: 0; bottom: 0; height: 62%; background: linear-gradient(to top, rgba(10, 10, 10, .88) 0%, rgba(10, 10, 10, .5) 45%, rgba(10, 10, 10, 0) 100%); }
 .why-card__body { position: absolute; left: 18px; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 7px; }
 .why-card__icon { color: #fff; display: flex; }
@@ -855,6 +856,7 @@ html[data-ab="1"] .ab-1 { display: inline; }
 .passport__photo { position: relative; flex: 1; min-height: 0; margin: 6px 0 0; padding: 5px 5px 20px; display: flex; background: #fff; box-shadow: 0 6px 16px rgba(0, 0, 0, .16); transform: rotate(2deg); }
 .passport__photo::before { content: ""; position: absolute; top: -7px; left: 50%; width: 46px; height: 14px; transform: translateX(-50%) rotate(-4deg); background: rgba(255, 238, 190, .8); }
 .passport__photo img { display: block; width: 100%; min-height: 0; object-fit: cover; }
+.passport__blank { flex: 1; min-height: 60px; background: #EEEBE5; }
 .passport__photo figcaption { position: absolute; left: 7px; bottom: 5px; font: 500 clamp(5.5px, .55vw, 7px) var(--mono); letter-spacing: .1em; color: #6B5E46; }
 .yamo-section { padding-top: clamp(52px, 6.5vw, 88px); padding-bottom: clamp(52px, 6.5vw, 88px); display: flex; flex-direction: column; gap: 32px; }
 .yamo-section__cta { align-self: center; }

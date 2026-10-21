@@ -3,7 +3,7 @@ title: "How to pay for a holiday in instalments, with no interest"
 category: Booking tips
 date: 2026-10-13
 updated: 2026-10-21
-image: detail-namibia-1.webp
+image: ""
 intro: "Pay for your holiday in instalments, like a lay-by for travel. How our deposits and payment plans work, with real examples and tips to save for your trip."
 ---
 
@@ -54,8 +54,6 @@ The earlier you book, the smaller each payment. Here's what monthly instalments 
 - **Bali, 7–14 November 2027.** R29,500 minus a R3,500 deposit leaves R26,000. That's 10 payments of R2,600 from December to September, settled before the 8 October deadline.
 
 Travelling in your birthday month? You get R500 off your balance, so your last instalment gets smaller.
-
-![The Bushfire Festival in Eswatini, reserved with a R2,500 deposit](/photos/moments/02%20Bushfire.webp)
 
 ## Travel now, pay later, or pay before you go?
 
@@ -115,7 +113,5 @@ Yes, on Yamo. You can also pay by EFT into our bank account.
 ### How do I know my payment has been received?
 
 Send your proof of payment to info@fuyamo.co.za or on WhatsApp, and we'll confirm it. On Yamo, your payments show up in the app.
-
-![The Cape Cross seal colony on our Namibia trip](/photos/moments/12%20Walvis%20Bay.webp)
 
 Ready to start? Choose a trip on our [group trips page](/trips/), or see the full booking steps on [How to book](/how-to-book/).

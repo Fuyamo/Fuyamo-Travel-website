@@ -2,7 +2,7 @@
 title: "Thailand from South Africa: Phuket, Phi Phi and Dubai"
 category: Destination guides
 date: 2026-10-21
-image: /photos/trips/thailand/1 cover.webp
+image: ""
 intro: "Thailand from South Africa with a Dubai stopover: visas for both, our Phuket itinerary, Phi Phi and Maya Bay, June vs December weather, money and tips."
 ---
 
@@ -23,8 +23,6 @@ Two countries, one trip. Our Thailand group trip flies from Johannesburg to Phuk
 Breaking the journey in Dubai turns a long trip into two holidays. Our stopover includes a Dubai desert experience: you head out of the city into the dunes, usually in a 4x4, for the kind of sunset you can only get in the desert. Quad biking and a desert jeep ride are optional extras if you want more adrenaline.
 
 Dubai is very hot in June (often above 40°C) and pleasantly warm in December. Dress modestly in public places and malls: cover your shoulders and knees, and keep swimwear for the beach and the pool.
-
-![A UAE stopover on the way to Phuket](/photos/trips/thailand/3.webp)
 
 ### Do South Africans need a visa for Dubai?
 
@@ -59,8 +57,6 @@ The Big Buddha is a white marble statue about 45 metres tall on a hilltop in the
 Phuket Town's old quarter is lined with pastel Sino-Portuguese shophouses built during the tin-mining boom. Walk Thalang Road and Soi Romanee for cafés, street art and photos. On Sunday evenings, Thalang Road becomes the Lard Yai walking street market, with food stalls, crafts and music.
 
 Also included: a **Phuket Ancient City tour**. And if you want a party day, **Yona Beach Club** is one of the optional extras.
-
-![Yona Beach Club off Phuket, one of the optional extras](/photos/trips/thailand/4.webp)
 
 ## Do South Africans need a visa for Thailand?
 

@@ -2,7 +2,7 @@
 title: "Namibia from South Africa: Swakopmund, Walvis Bay and Windhoek"
 category: Destination guides
 date: 2026-10-21
-image: /photos/trips/namibia/1 cover.webp
+image: ""
 intro: "A Namibia trip from South Africa: Windhoek, Swakopmund and Walvis Bay, Dune 7, Cape Cross seals and flamingos, plus visas, May weather, money and packing."
 ---
 
@@ -55,8 +55,6 @@ Cape Cross, on the Skeleton Coast north of Swakopmund, is home to one of the lar
 
 Cape Cross is also where the Portuguese explorer Diogo Cão planted a stone cross in 1486, which is how the cape got its name. A replica stands there today.
 
-![The Cape Cross seal colony on the Skeleton Coast](/photos/trips/namibia/3.webp)
-
 ## Do South Africans need a visa for Namibia?
 
 No. South African passport holders can visit Namibia on holiday without a visa. What you do need:
@@ -105,8 +103,6 @@ Windhoek, Swakopmund and Walvis Bay are not malaria areas. Malaria in Namibia is
 - Sunscreen, sunglasses, a hat and lip balm (the air is very dry)
 - Binoculars or a camera with a zoom for flamingos and seals
 - Your passport and some cash
-
-![The Namib Desert](/photos/trips/namibia/4.webp)
 
 ## What's included in our Namibia trip
 

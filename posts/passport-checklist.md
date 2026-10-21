@@ -3,7 +3,7 @@ title: "Passport checklist for South Africans: renewal and visas"
 category: Visa & passports
 date: 2026-10-13
 updated: 2026-10-21
-image: detail-thailand-3.webp
+image: ""
 intro: "Run this passport checklist before you book: validity and blank-page rules, renewing at Home Affairs or a bank, documents for children, and visas for our trips."
 ---
 
@@ -24,8 +24,6 @@ Every border crossing uses space, because you're stamped out of one country and 
 - **Even a weekend adds up.** A trip to Lesotho means four stamps: out of South Africa, into Lesotho, out of Lesotho and back into South Africa.
 
 If you're down to your last few pages, consider renewing with a 48-page maxi passport.
-
-![On our 3 Countries trip, you'll collect stamps from Zimbabwe, Zambia and Botswana](/photos/moments/06%20Victoria%20Falls.webp)
 
 ## 3. Does your name match your booking exactly?
 
@@ -97,8 +95,6 @@ Searching for "Bali visa" or "Zanzibar insurance" brings up lookalike websites t
 - Note the contact details of the South African embassy or high commission in the country you're visiting.
 
 If your passport is lost or stolen abroad, report it to the local police and contact the nearest South African embassy or high commission for an emergency travel document.
-
-![At the Sheikh Zayed Grand Mosque in Abu Dhabi, on a UAE stopover](/photos/moments/10%20Abu%20Dhabi%20%5Bthailand%5D.webp)
 
 ## Your passport checklist, in one list
 

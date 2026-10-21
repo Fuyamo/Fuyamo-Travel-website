@@ -125,7 +125,7 @@ function readPosts(root, photo, notes) {
     const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
     if (!m) throw new Error(`posts/${file} must start with the --- details block`);
     const meta = frontMatter(m[1]);
-    ['title', 'category', 'date', 'image', 'intro'].forEach((key) => {
+    ['title', 'category', 'date', 'intro'].forEach((key) => {
       if (!meta[key]) throw new Error(`posts/${file} is missing "${key}:" in its details block`);
     });
     meta.date = String(meta.date).slice(0, 10);
@@ -137,8 +137,9 @@ function readPosts(root, photo, notes) {
     const where = 'Travel Talk → ' + meta.title;
     // Photos chosen in the admin live in photos/ and are published like the rest; older articles name a file in
     // site/assets/photos/.
-    let img;
-    if (/^\/?photos\//.test(meta.image)) img = photo(meta.image, 'posts', where);
+    let img = '';
+    if (!meta.image) notes.push(`${where}: no photo yet. Choose one in the admin.`);
+    else if (/^\/?photos\//.test(meta.image)) img = photo(meta.image, 'posts', where);
     else {
       img = meta.image.includes('/') ? meta.image.replace(/^\//, '') : 'assets/photos/' + meta.image;
       if (!exists(root + '/site/' + img)) notes.push(`${where}: the photo ${img} isn't in site/.`);
@@ -301,7 +302,7 @@ function structuredData(p, R, siteUrl) {
   if (p.page === 'post') {
     const post = R.findPost(p.param);
     graph.push({
-      '@type': 'BlogPosting', headline: post.title, description: post.intro, image: abs(post.img), articleSection: post.cat,
+      '@type': 'BlogPosting', headline: post.title, description: post.intro, image: abs('assets/share/' + p.share + '.jpg'), articleSection: post.cat,
       datePublished: post.date, dateModified: post.updated || post.date, author: ref, publisher: ref, mainEntityOfPage: abs(p.path), inLanguage: 'en-ZA',
     }, crumbs([['Home', ''], ['Travel Talk', C.PAGES.talk.path], [post.title, p.path]]));
   }
@@ -431,7 +432,8 @@ function run(argv) {
   let images = 0;
   pages.forEach((p) => {
     write(SITE_DIR + '/' + p.path + 'index.html', pageHtml(p, R, versions, siteUrl, today));
-    if (coverImage(SITE_DIR + '/' + p.image, SITE_DIR + '/assets/share/' + p.share + '.jpg', SHARE_SIZE[0], SHARE_SIZE[1], 66)) images++;
+    // A page without its own photo yet gets the home photo in link previews (never shown on the site itself).
+    if (coverImage(SITE_DIR + '/' + (p.image || C.PHOTO.headers.home), SITE_DIR + '/assets/share/' + p.share + '.jpg', SHARE_SIZE[0], SHARE_SIZE[1], 66)) images++;
   });
   write(SITE_DIR + '/404.html', pageHtml({
     page: 'notfound', path: '', share: 'home', title: 'Page not found · Fuyamo Travel', description: C.PAGES.home.description,

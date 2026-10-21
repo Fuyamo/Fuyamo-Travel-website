@@ -3,7 +3,7 @@ title: "Bali from South Africa: a 7-day itinerary, visa and costs"
 category: Destination guides
 date: 2026-10-13
 updated: 2026-10-21
-image: detail-bali-1.webp
+image: ""
 intro: "Planning Bali from South Africa? Our 7-day itinerary covers Ubud, Nusa Penida, Uluwatu and Canggu, plus the visa on arrival, tourist levy, money and weather."
 ---
 
@@ -33,8 +33,6 @@ Built into the Ubud days:
 - **The Bali Swing.** You swing out over the jungle canopy, harnessed in. Wear something that moves in the wind (the flowing-dress photo is a Bali classic) and shoes that stay on.
 - **A waterfall experience.** Bali's waterfalls are cool, green and loud. Wear shoes with grip, because wet rocks are slippery.
 - **Cretya Ubud day pass.** Pools, loungers and rice-terrace views. Treat it as your recovery day.
-
-![The Bali Swing in Ubud, one of the activities included on our trip](/photos/moments/05%20Bali.webp)
 
 ### Nusa Penida day trip
 

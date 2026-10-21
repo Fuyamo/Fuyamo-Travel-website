@@ -330,6 +330,10 @@ textarea { resize: vertical; }
 .picker__item { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: var(--paper); }
 .picker__item img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .picker__item:hover { outline: 3px solid var(--amber); outline-offset: -3px; }
+.picker__item { position: relative; }
+.picker__item.is-used img { opacity: .35; }
+.picker__item.is-used:hover { outline-color: var(--line, #ddd); cursor: not-allowed; }
+.picker__used { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 99px; background: rgba(17, 17, 17, .78); color: #fff; font: 600 11px/1.4 var(--sans, sans-serif); }
 @media (max-width: 559.98px) { .picker__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .menu { display: flex; flex-direction: column; }

@@ -89,7 +89,8 @@ window.FUYAMO = (function () {
   };
 
   const headerName = (key) => PAGES[key].path.replace(/\/$/, '').replace(/-/g, '_') || 'home';
-  Object.keys(PAGES).forEach((key) => { PAGES[key].image = PHOTO.headers[headerName(key)] || PHOTO.headers.home; });
+  // A page without its own header photo shows a plain dark header (each photo is used only once on the site).
+  Object.keys(PAGES).forEach((key) => { PAGES[key].image = PHOTO.headers[headerName(key)] || ''; });
 
   // Trip and article pages are generated from TRIPS and POSTS at these addresses.
   const PATHS = {

@@ -3,7 +3,7 @@ title: "What to pack for Afriski: a Lesotho snow trip packing list"
 category: Packing
 date: 2026-10-13
 updated: 2026-10-21
-image: detail-lesotho-1.webp
+image: ""
 intro: "What to pack for Afriski and a Lesotho snow trip: the full packing list for adults and kids, what to wear on the slopes and the documents for the border."
 ---
 
@@ -31,8 +31,6 @@ The biggest mistake is wearing one huge jacket over a T-shirt. You'll be too hot
 3. **Outer layer:** a waterproof, windproof jacket and waterproof pants. This is what keeps the snow out.
 
 Most sports and outdoor stores sell thermals and waterproof gear in winter, and you don't need expensive ski brands for one weekend. If you don't own ski pants, ask around: friends who've been to the snow often have a pair to lend.
-
-![Long, padded jackets are a winner at Afriski](/photos/trips/lesotho/3.webp)
 
 ## What to wear on the slopes
 
@@ -85,8 +83,6 @@ Lesotho is a separate country, so you'll cross an international border to reach 
 - **Money:** Lesotho's currency, the loti, is pegged to the rand, and rand is accepted everywhere. Bring some cash for extras, snacks and souvenirs.
 
 Our [passport checklist for South Africans](/travel-talk/passport-checklist/) covers renewals, children's passports and how long it all takes.
-
-![Skiing at Afriski, mokorotlo hat and all](/photos/moments/07%20Afriski%20%5Blesothofam%5D.webp)
 
 ## Packing for kids: the Family Edition list
 

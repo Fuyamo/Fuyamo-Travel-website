@@ -2,7 +2,7 @@
 title: "Victoria Falls from Johannesburg: Zimbabwe, Zambia and Chobe"
 category: Destination guides
 date: 2026-10-21
-image: /photos/trips/vicfalls/1 cover.webp
+image: ""
 intro: "Victoria Falls from Johannesburg: the Zimbabwe vs Zambia side, a Chobe day trip, Devil's Pool, visas for South Africans, October weather, money and tips."
 ---
 
@@ -37,8 +37,6 @@ Most of the falls face Zimbabwe, so this is where you get the classic, wide view
 From Zambia you're closer to the water and can look down into the gorge from the Knife-Edge Bridge, or climb down to the Boiling Pot, where the river churns at the bottom. Livingstone Island, home of Devil's Pool, is on this side too. Our day trip to Livingstone takes you across.
 
 You cross between the two countries on the **Victoria Falls Bridge**, built in 1905. It's a border crossing, so you'll be stamped out of Zimbabwe and into Zambia, and back again. It's also where the famous 111-metre bungee jump is, if you're brave enough.
-
-![Devil's Pool, on the edge of the falls, is an optional extra in the low-water season](/photos/trips/vicfalls/2.webp)
 
 ## Devil's Pool: swimming on the edge of the falls
 
@@ -106,8 +104,6 @@ Yes. Victoria Falls, Livingstone and Chobe are all in malaria areas. See a trave
 - A rain jacket or poncho, only if you're visiting in high-water season
 - Binoculars for Chobe
 - US dollars in small notes, and your passport
-
-![An elephant crosses in front of a game drive vehicle in Botswana](/photos/trips/vicfalls/3.webp)
 
 ## What's included in our 3 Countries trip
 
