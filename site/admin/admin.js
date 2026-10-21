@@ -1001,7 +1001,8 @@
 
   // ----- Photos -----
 
-  const HEADER_SLOTS = [['home', 'Home'], ['trips', 'Group trips'], ['calendar', 'Calendar'], ['services', 'Services'], ['about', 'About'], ['how_to_book', 'How to book'], ['corporate', 'Corporate'], ['contact', 'Contact'], ['travel_talk', 'Travel Talk'], ['yamo', 'Yamo']];
+  // The pages that show a header photo (Travel Talk and Yamo have their own designs; their link previews use the home photo).
+  const HEADER_SLOTS = [['home', 'Home'], ['trips', 'Group trips'], ['calendar', 'Calendar'], ['services', 'Services'], ['about', 'About'], ['how_to_book', 'How to book'], ['corporate', 'Corporate'], ['contact', 'Contact']];
   const LIST_SLOTS = [
     ['intro', 'Intro photo pills', 'The three small round photos in “We plan the flights, the stays…”.', 3, 'pill'],
     ['why', 'Why cards', 'One for each “Travel, minus the stress” card, in order.', 5, 'portrait'],
@@ -1035,7 +1036,7 @@
           </section>
           <section class="card">
             <h2 class="card__title">Page headers</h2>
-            <p class="card__hint">The big photo at the top of each page, in the shape it has on a computer (phones show a taller slice of the middle). Landscape photos work best. Travel Talk and Yamo are only used for link previews.</p>
+            <p class="card__hint">The big photo at the top of each page, in the shape it has on a computer (phones show a taller slice of the middle). Landscape photos work best.</p>
             <div class="slots slots--hero">${slot('headers.home', d.headers.home, 'Home', 'Home header', 'hero')}</div>
             <div class="slots slots--headers">${each(HEADER_SLOTS.filter(([k]) => k !== 'home'), ([k, label]) => slot('headers.' + k, d.headers[k], label, label + ' header', 'header'))}</div>
           </section>

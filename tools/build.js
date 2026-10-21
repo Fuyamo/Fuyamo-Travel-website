@@ -223,6 +223,9 @@ const readJson = (path) => JSON.parse(read(path));
 // Adds ref=fuyamo-site to a Yamo link, so Yamo can see the visit came from this website.
 const withRef = (url) => (!url || /[?&]ref=/.test(url) ? url : url + (url.includes('?') ? '&' : '?') + 'ref=fuyamo-site');
 
+// Pages whose design has no header photo: a photo set for them only shows in link previews (the home photo otherwise).
+const PREVIEW_ONLY_HEADERS = ['travel_talk', 'yamo'];
+
 function loadContent(root, photo, notes) {
   const dir = root + '/content';
   const P = readJson(dir + '/photos.json');
@@ -231,7 +234,8 @@ function loadContent(root, photo, notes) {
     return (srcs || []).map((src, i) => photo(src, section, `Photos → ${label} ${i + 1}`));
   };
   const headers = {};
-  Object.keys(P.headers || {}).forEach((k) => { headers[k] = photo(P.headers[k], 'headers', 'Photos → Page headers → ' + k); });
+  Object.keys(P.headers || {}).filter((k) => P.headers[k] || !PREVIEW_ONLY_HEADERS.includes(k))
+    .forEach((k) => { headers[k] = photo(P.headers[k], 'headers', 'Photos → Page headers → ' + k); });
   const photos = {
     headers, intro: list(P.intro, 'intro', 'Intro pills', 3), why: list(P.why, 'why', 'Why cards', 5),
     moments: (P.moments || []).map((m, i) => ({ src: photo(m.image, 'moments', 'Photos → Moments ' + (i + 1)), caption: m.caption || '', trip: m.trip || '' })),
@@ -459,7 +463,8 @@ function run(argv) {
   const known = new Set(pages.map((p) => p.path));
   Object.keys(C.PAGES).filter((key) => !C.PAGES[key].plain).forEach((key) => {
     const name = C.headerName(key);
-    if (!C.PHOTO.headers[name]) notes.push(`The ${key} page has no header photo. Choose one in the admin: Photos → Page headers.`);
+    // An empty slot is already in the photo notes above; this catches a page with no slot at all.
+    if (!(name in C.PHOTO.headers) && !PREVIEW_ONLY_HEADERS.includes(name)) notes.push(`The ${key} page has no header photo. Choose one in the admin: Photos → Page headers.`);
   });
   ['trips', 'travel-talk'].forEach((folder) => {
     sh(`cd ${q(SITE_DIR + '/' + folder)} 2>/dev/null && ls -d */ 2>/dev/null; true`).split(/\r|\n/).filter(Boolean).forEach((sub) => {
