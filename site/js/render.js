@@ -423,7 +423,7 @@ window.FUYAMO_RENDER = (function (C) {
   const MOMENT_TILT = [['-5deg', '10px'], ['3deg', '-6px'], ['-2deg', '14px'], ['4deg', '-10px'], ['-3deg', '8px'], ['2deg', '-4px'], ['-4deg', '12px']];
   const BENTO_SPANS = [4, 2, 2, 2, 2, 3, 3, 2, 4];
 
-  // "Moments worth the trip": one polaroid per photo in photos/moments/, linked to the trip its caption names (or the
+  // "Moments worth the trip": one polaroid per photo chosen in the admin (Photos → Moments), linked to the trip its caption names (or the
   // [word] in its file name). The row drifts sideways, so it's written twice (the copy hidden from screen readers)
   // to loop without a gap.
   const momentCards = (copy) => each(C.MOMENTS, (m, i) => {
