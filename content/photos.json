@@ -93,6 +93,31 @@
       "image": "/photos/moments/14 Eswatini.webp",
       "caption": "Eswatini",
       "trip": ""
+    },
+    {
+      "image": "/photos/trips/zanzibar/4.webp",
+      "caption": "Zanzibar",
+      "trip": "zanzibar"
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-8486-n1b6.heic",
+      "caption": "Zanzibar",
+      "trip": "zanzibar"
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-2814-1ksz.jpg",
+      "caption": "China",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-1601-ks07.jpg",
+      "caption": "Lesotho",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-8554-a28x.heic",
+      "caption": "Zanzibar",
+      "trip": ""
     }
   ],
   "about": [
