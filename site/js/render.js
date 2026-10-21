@@ -423,7 +423,7 @@ window.FUYAMO_RENDER = (function (C) {
   const MOMENT_TILT = [['-5deg', '10px'], ['3deg', '-6px'], ['-2deg', '14px'], ['4deg', '-10px'], ['-3deg', '8px'], ['2deg', '-4px'], ['-4deg', '12px']];
   const BENTO_SPANS = [4, 2, 2, 2, 2, 3, 3, 2, 4];
 
-  // "Moments worth the trip": one polaroid per photo chosen in the admin (Photos → Moments), linked to the trip its caption names (or the
+  // Moments ("Trips that left the group chat"): one polaroid per photo chosen in the admin (Photos → Moments), linked to the trip its caption names (or the
   // [word] in its file name). The row drifts sideways, so it's written twice (the copy hidden from screen readers)
   // to loop without a gap.
   const momentCards = (list, copy, row) => each(list, (m, i) => {
@@ -538,7 +538,7 @@ window.FUYAMO_RENDER = (function (C) {
       </section>
 
       ${C.MOMENTS.length ? `<section class="moments">
-        <div class="center-head"><h2 class="title-xl balance">Moments worth<br>the trip.</h2></div>
+        <div class="center-head"><h2 class="title-xl balance">Trips that left<br>the group chat.</h2></div>
         ${each(momentRows(), (list, row) => `<div class="moments__row${row ? ' moments__row--back' : ''}"><div class="moments__track" style="--n:${list.length}">${momentCards(list, false, row)}${momentCards(list, true, row)}</div></div>`)}
       </section>` : ''}
 

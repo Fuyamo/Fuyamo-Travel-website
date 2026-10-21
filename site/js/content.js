@@ -137,7 +137,7 @@ window.FUYAMO = (function () {
   const REVIEWS = DATA.reviews.reviews || [];
   const REVIEW_COLORS = ['#0F4C81', '#B5174E', '#1E7A4C', '#7A3FB0', '#B85C00'];
 
-  // "Moments worth the trip": edited in the admin (Photos → Moments).
+  // Moments ("Trips that left the group chat"): edited in the admin (Photos → Moments).
   const MOMENTS = PHOTO.moments;
 
   // Questions and answers, edited in the admin (FAQs).

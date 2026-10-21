@@ -1288,7 +1288,7 @@
             ${waiting.length ? `<div class="library-strip">${each(waiting, (p) => `<span class="library-strip__item" title="${h(photoName(p))}">${photoImg(p)}${deletable(p, uses, trips) ? `<button class="picker__delete" data-act="deleteUpload" data-src="${h(p)}" title="Delete from the photo library" aria-label="Delete ${h(photoName(p))}">${icon('trash', 15)}</button>` : ''}</span>`)}</div>` : ''}
           </section>
           <section class="card">
-            <h2 class="card__title">Moments worth the trip</h2>
+            <h2 class="card__title">Moments <small>“Trips that left the group chat”</small></h2>
             <p class="card__hint">The drifting polaroids on the home page. Add as many as you like: real travellers having fun work best. Short videos work too: they play silently on a loop (the first 8 seconds). Each links to the trip in its caption, or the one you pick.</p>
             <div class="moments">${each(d.moments, (m, i) => `<div class="moment" data-drag-list="moments" data-i="${i}"><span class="drag-handle" title="Drag to move" aria-hidden="true">⠿</span>
               ${slot(`moments.${i}.image`, m.image, '', 'Moment photo')}
