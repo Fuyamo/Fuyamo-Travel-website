@@ -405,6 +405,11 @@
     return SITE + '/assets/photos/' + encodeURIComponent(src);
   }
   const photoName = (src) => decodeURIComponent(String(src).split('/').pop()).replace(/\.[a-z]+$/i, '');
+  // A photo for a frame or the picker. iPhone HEIC photos only show in Safari; elsewhere the file name shows instead
+  // (the website build converts them, so they work on the site).
+  const photoImg = (src) => (/\.hei[cf]$/i.test(src)
+    ? `<span class="photo-name">${h(photoName(src))}<small>iPhone photo (HEIC)</small></span><img src="${h(photoUrl(src))}" alt="" loading="lazy" onerror="this.remove()">`
+    : `<img src="${h(photoUrl(src))}" alt="" loading="lazy">`);
 
   // Photos chosen from the device are sent with the save that uses them.
   function pendingFiles(value) {
@@ -473,12 +478,15 @@
       const draw = () => {
         const term = search.value.trim().toLowerCase();
         const uses = photoUses(), usedAt = (p) => (p !== current && uses.get(p)) || '';
-        const list = [...S.pending.keys()].concat(S.library || []).filter((p) => !term || p.toLowerCase().includes(term))
-          .sort((a, b) => !!usedAt(a) - !!usedAt(b)); // photos still free first
-        grid.innerHTML = list.length ? each(list, (p) => {
+        const list = [...S.pending.keys()].concat(S.library || []).filter((p) => !term || p.toLowerCase().includes(term));
+        const tile = (p) => {
           const where = usedAt(p);
-          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}"><img src="${h(photoUrl(p))}" alt="" loading="lazy">${where ? '<span class="picker__used">Used</span>' : ''}</button>`;
-        }) : '<p class="muted">No photos found.</p>';
+          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : ''}</button>`;
+        };
+        const free = list.filter((p) => !usedAt(p)), taken = list.filter((p) => usedAt(p));
+        grid.innerHTML = list.length ? (free.length ? each(free, tile) : '<p class="picker__group">Every photo here is already on the website. Upload a new one.</p>')
+          + (taken.length ? '<p class="picker__group">Already on the website (each photo goes in one place)</p>' + each(taken, tile) : '')
+          : '<p class="muted">No photos found.</p>';
       };
       Promise.all([ensure('library'), ensure('photos', 'trips', 'posts').catch(() => {})]).then(draw).catch((err) => { grid.innerHTML = `<p class="muted">Couldn’t load the photos: ${h(err.message)}</p>`; });
       search.addEventListener('input', draw);
@@ -646,8 +654,9 @@
       <button class="icon-btn" data-act="up" data-list="${list}" data-i="${i}" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>${icon('up', 16)}</button>
       <button class="icon-btn" data-act="down" data-list="${list}" data-i="${i}" aria-label="Move down" ${i === n - 1 ? 'disabled' : ''}>${icon('down', 16)}</button>
       <button class="icon-btn icon-btn--danger" data-act="remove" data-list="${list}" data-i="${i}" aria-label="Remove">${icon('trash', 16)}</button></div>`;
-  const slot = (path, src, label, title) => `<button class="slot${src ? '' : ' slot--empty'}" data-act="pick" data-path="${path}" data-title="${h(title || label || 'Choose a photo')}">
-      ${src ? `<img src="${h(photoUrl(src))}" alt="" loading="lazy">` : icon('plus', 22)}${label ? `<span class="slot__label">${h(label)}</span>` : ''}</button>`;
+  // shape: the frame takes the photo's shape on the website (see .slot--… in admin.css), so it doubles as a preview.
+  const slot = (path, src, label, title, shape) => `<button class="slot${shape ? ' slot--' + shape : ''}${src ? '' : ' slot--empty'}" data-act="pick" data-path="${path}" data-title="${h(title || label || 'Choose a photo')}">
+      ${src ? photoImg(src) : icon('plus', 22)}${label ? `<span class="slot__label">${h(label)}</span>` : ''}</button>`;
   const savebar = (extra = '') => `<div class="savebar">${extra}<span class="savebar__note" id="unsaved" ${S.dirty ? '' : 'hidden'}>Unsaved changes</span><button class="btn-primary" data-act="save">Save</button></div>`;
 
   // ----- Overview -----
@@ -781,7 +790,7 @@
           <section class="card">
             <h2 class="card__title">Photos</h2>
             <p class="card__hint">The cover shows on trip cards, at the top of the trip page and in link previews. The other three fill the gallery.</p>
-            <div class="slots">${slot('cover', d.cover, 'Cover', 'Cover photo')}${each([0, 1, 2], (i) => slot('gallery.' + i, d.gallery[i], 'Gallery ' + (i + 1)))}</div>
+            <div class="slots slots--row">${slot('cover', d.cover, 'Cover', 'Cover photo', 'portrait')}${each([0, 1, 2], (i) => slot('gallery.' + i, d.gallery[i], 'Gallery ' + (i + 1), '', i ? 'square' : 'wide'))}</div>
           </section>
 
           <section class="card">
@@ -994,12 +1003,12 @@
 
   const HEADER_SLOTS = [['home', 'Home'], ['trips', 'Group trips'], ['calendar', 'Calendar'], ['services', 'Services'], ['about', 'About'], ['how_to_book', 'How to book'], ['corporate', 'Corporate'], ['contact', 'Contact'], ['travel_talk', 'Travel Talk'], ['yamo', 'Yamo']];
   const LIST_SLOTS = [
-    ['intro', 'Intro photo pills', 'The three small round photos in “We plan the flights, the stays…”.', 3],
-    ['why', 'Why cards', 'One for each “Travel, minus the stress” card, in order.', 5],
-    ['about', 'About page', 'The two photos beside the text.', 2],
-    ['services', 'Services page', 'Group travel, tailored travel, public sector &amp; corporate.', 3],
+    ['intro', 'Intro photo pills', 'The three small round photos in “We plan the flights, the stays…”.', 3, 'pill'],
+    ['why', 'Why cards', 'One for each “Travel, minus the stress” card, in order.', 5, 'portrait'],
+    ['about', 'About page', 'The two photos beside the text.', 2, 'tall'],
+    ['services', 'Services page', 'Group travel, tailored travel, public sector &amp; corporate.', 3, ''],
   ];
-  const SINGLE_SLOTS = [['how_to_book', 'How to book', 'The last step'], ['birthday_popup', 'Birthday popup', 'The offer popup'], ['yamo_passport', 'Yamo passport', 'Taped into the passport']];
+  const SINGLE_SLOTS = [['how_to_book', 'How to book', 'The last step', 'banner'], ['birthday_popup', 'Birthday popup', 'The offer popup', 'tall'], ['yamo_passport', 'Yamo passport', 'Taped into the passport', 'portrait']];
 
   async function photosView() {
     page('Photos', loading());
@@ -1026,15 +1035,16 @@
           </section>
           <section class="card">
             <h2 class="card__title">Page headers</h2>
-            <p class="card__hint">The big photo at the top of each page. Landscape photos work best. Travel Talk and Yamo are only used for link previews.</p>
-            <div class="slots">${each(HEADER_SLOTS, ([k, label]) => slot('headers.' + k, d.headers[k], label, label + ' header'))}</div>
+            <p class="card__hint">The big photo at the top of each page, in the shape it has on a computer (phones show a taller slice of the middle). Landscape photos work best. Travel Talk and Yamo are only used for link previews.</p>
+            <div class="slots slots--hero">${slot('headers.home', d.headers.home, 'Home', 'Home header', 'hero')}</div>
+            <div class="slots slots--headers">${each(HEADER_SLOTS.filter(([k]) => k !== 'home'), ([k, label]) => slot('headers.' + k, d.headers[k], label, label + ' header', 'header'))}</div>
           </section>
-          ${each(LIST_SLOTS, ([k, label, hint, n]) => `<section class="card">
+          ${each(LIST_SLOTS, ([k, label, hint, n, shape]) => `<section class="card">
             <h2 class="card__title">${label}</h2><p class="card__hint">${hint}</p>
-            <div class="slots">${each(d[k].slice(0, n), (src, i) => slot(`${k}.${i}`, src, String(i + 1), label))}</div></section>`)}
+            <div class="slots slots--${k}">${each(d[k].slice(0, n), (src, i) => slot(`${k}.${i}`, src, String(i + 1), label, shape))}</div></section>`)}
           <section class="card">
             <h2 class="card__title">Other photos</h2>
-            <div class="slots">${each(SINGLE_SLOTS, ([k, label, hint]) => slot(k, d[k], label, label + ' · ' + hint))}</div>
+            <div class="slots slots--row">${each(SINGLE_SLOTS, ([k, label, hint, shape]) => slot(k, d[k], label, label + ' · ' + hint, shape))}</div>
           </section>
           ${savebar()}`);
       },
