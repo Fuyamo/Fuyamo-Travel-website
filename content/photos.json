@@ -17,9 +17,9 @@
   "why": [
     "/photos/uploads/2026-10/picturetheworld-my-web-size-31-bh8e.jpg",
     "/photos/uploads/2026-10/screenshot-2026-10-21-at-15-06-46-1kt3.jpg",
-    "/photos/uploads/2026-10/gemini-generated-image-pjg2grpjg2grpjg2-jfai.jpg",
-    "/photos/uploads/2026-10/img-6596-2i6q.jpg",
-    "/photos/uploads/2026-10/img-8486-n1b6.heic"
+    "/photos/uploads/2026-10/d73f2c-a57de135f3b048c495dc45bc086aa141m-u8lp.jpg",
+    "/photos/uploads/2026-10/img-1577-z3oy.jpg",
+    "/photos/uploads/2026-10/img-1298-20le.jpg"
   ],
   "moments": [
     {
@@ -78,11 +78,6 @@
       "trip": ""
     },
     {
-      "image": "/photos/uploads/2026-10/img-1577-z3oy.jpg",
-      "caption": "Mozambique",
-      "trip": ""
-    },
-    {
       "image": "/photos/uploads/2026-10/img-4034-8ejr.jpg",
       "caption": "Zanzibar",
       "trip": ""
@@ -96,6 +91,11 @@
       "image": "/photos/uploads/2026-10/img-3578-e9sj.jpg",
       "caption": "Lesotho",
       "trip": ""
+    },
+    {
+      "image": "/photos/trips/bushfire/2.webp",
+      "caption": "Swaziland",
+      "trip": "bushfire"
     }
   ],
   "about": [
@@ -103,7 +103,7 @@
     "/photos/uploads/2026-10/dji-fly-20260908-181754-0940-17888821508-ecpm.jpg"
   ],
   "services": [
-    "/photos/uploads/2026-10/img-6596-shq5.jpg",
+    "/photos/trips/mozambique/4.webp",
     "/photos/trips/lesothofam/4.webp",
     "/photos/trips/thailand/3.webp"
   ],
