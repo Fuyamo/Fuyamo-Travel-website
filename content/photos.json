@@ -16,10 +16,10 @@
   ],
   "why": [
     "/photos/uploads/2026-10/picturetheworld-my-web-size-31-bh8e.jpg",
-    "/photos/uploads/2026-10/img-8486-n1b6.heic",
+    "/photos/trips/bushfire/2.webp",
     "/photos/uploads/2026-10/img-4034-8ejr.jpg",
     "",
-    ""
+    "/photos/uploads/2026-10/img-6596-shq5.jpg"
   ],
   "moments": [
     {
@@ -38,18 +38,38 @@
       "trip": ""
     },
     {
-      "image": "/photos/uploads/2026-10/img-4892-rd0j.jpg",
-      "caption": "Tanzania",
-      "trip": ""
-    },
-    {
       "image": "/photos/uploads/2026-10/img-6344-vl5q.jpg",
       "caption": "Zanzibar",
       "trip": ""
     },
     {
+      "image": "/photos/trips/zanzibar/1 cover.webp",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-4892-rd0j.jpg",
+      "caption": "Tanzania",
+      "trip": ""
+    },
+    {
       "image": "/photos/uploads/2026-10/img-0309-mgqt.jpg",
       "caption": "Mozambique",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/dji-fly-20260908-172604-0975-17888846072-csla.jpg",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-3438-ocae.jpg",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/trips/vicfalls/4.webp",
+      "caption": "Vic Falls",
       "trip": ""
     }
   ],
@@ -62,7 +82,7 @@
     "/photos/trips/lesothofam/4.webp",
     "/photos/trips/thailand/3.webp"
   ],
-  "how_to_book": "/photos/uploads/2026-10/img-1577-z3oy.jpg",
+  "how_to_book": "/photos/uploads/2026-10/img-6438-18x0.jpg",
   "birthday_popup": "/photos/trips/thailand/1 cover.webp",
   "yamo_passport": "/photos/trips/lesotho/4.webp"
 }
