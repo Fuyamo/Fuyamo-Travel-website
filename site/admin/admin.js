@@ -449,10 +449,11 @@
 
   // ---------- Photo picker ----------
 
-  // Where each photo is already used. Every photo goes in one place on the site (a trip's own photos also show on
-  // its cards), so the picker won't hand out one that's in use somewhere else.
+  // Where each photo is already used. A photo goes in one place on the site, not counting the trips: a trip's cover
+  // and gallery can also be used once somewhere else. So the picker won't hand out a photo already in another place.
   function photoUses() {
     const uses = new Map();
+    if (V && V.draft && Array.isArray(V.draft.gallery)) return uses; // choosing a trip's own photos: anything goes
     const add = (src, where) => { if (!uses.has(src)) uses.set(src, where); };
     const walk = (v, where) => {
       if (typeof v === 'string') {
@@ -462,10 +463,12 @@
     };
     if (V && V.draft) walk(V.draft, 'on this page');
     walk(S.photos, 'in Photos');
-    (S.trips || []).forEach((t) => walk([t.cover, t.gallery], 'on the ' + (t.menu_label || t.name) + ' trip'));
     (S.posts || []).forEach((p) => walk([p.image, p.body], 'in the article “' + p.title + '”'));
     return uses;
   }
+
+  // A trip's cover and gallery, which may also be used once somewhere else.
+  const tripPhotos = () => new Set((S.trips || []).flatMap((t) => [t.cover].concat(t.gallery || [])).filter(Boolean));
 
   function pickPhoto(title = 'Choose a photo', current = '') {
     return new Promise((resolve) => {
@@ -477,15 +480,15 @@
       const grid = d.el.querySelector('.picker__grid'), search = d.el.querySelector('.picker__search');
       const draw = () => {
         const term = search.value.trim().toLowerCase();
-        const uses = photoUses(), usedAt = (p) => (p !== current && uses.get(p)) || '';
+        const uses = photoUses(), trips = tripPhotos(), usedAt = (p) => (p !== current && uses.get(p)) || '';
         const list = [...S.pending.keys()].concat(S.library || []).filter((p) => !term || p.toLowerCase().includes(term));
         const tile = (p) => {
           const where = usedAt(p);
-          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : ''}</button>`;
+          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Already used ' + where : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : trips.has(p) ? '<span class="picker__used picker__used--trip">Trip photo</span>' : ''}</button>`;
         };
         const free = list.filter((p) => !usedAt(p)), taken = list.filter((p) => usedAt(p));
         grid.innerHTML = list.length ? (free.length ? each(free, tile) : '<p class="picker__group">Every photo here is already on the website. Upload a new one.</p>')
-          + (taken.length ? '<p class="picker__group">Already on the website (each photo goes in one place)</p>' + each(taken, tile) : '')
+          + (taken.length ? '<p class="picker__group">Already used on the website (a photo goes in one place, besides a trip’s gallery)</p>' + each(taken, tile) : '')
           : '<p class="muted">No photos found.</p>';
       };
       Promise.all([ensure('library'), ensure('photos', 'trips', 'posts').catch(() => {})]).then(draw).catch((err) => { grid.innerHTML = `<p class="muted">Couldn’t load the photos: ${h(err.message)}</p>`; });
@@ -493,7 +496,7 @@
       d.el.addEventListener('click', (e) => {
         if (e.target.closest('[data-x="close"]')) d.close(null);
         const item = e.target.closest('[data-src]');
-        if (item && item.dataset.used) toast(`That photo is already used ${item.dataset.used}. Each photo goes in one place, so choose another or upload a new one.`, 'error');
+        if (item && item.dataset.used) toast(`That photo is already used ${item.dataset.used}. A photo goes in one place (besides a trip’s gallery), so choose another or upload a new one.`, 'error');
         else if (item) d.close(item.dataset.src);
       });
       d.el.querySelector('input[type=file]').addEventListener('change', async (e) => {

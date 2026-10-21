@@ -7,7 +7,7 @@ The Fuyamo dashboard, for everyday changes from any computer or phone:
 - **Overview:** visitors, the next departures, recent changes and whether the latest save is live yet.
 - **Trips:** prices, deposits, departure dates with their Yamo links, what's included, extras, photos and the trip details PDF. Add a trip, or hide one without deleting it.
 - **Articles:** write, edit or remove Travel Talk articles, with photos.
-- **Photos:** every section's photos: page headers, intro pills, Why cards, Moments, About, Services and the rest. **Each photo is used in one place only** (a trip's own photos also show on its cards). The photo picker marks photos already in use as "Used" and won't pick them. An empty slot shows a plain frame (a dark header, a beige box), and the build lists every empty slot.
+- **Photos:** every section's photos: page headers, intro pills, Why cards, Moments, About, Services and the rest. **Each photo is used in one place only**, not counting the trips: a trip's cover and gallery photos can also be used once somewhere else. The photo picker marks photos already in use elsewhere as "Used" and won't pick them; trip photos show "Trip photo". An empty slot shows a plain frame (a dark header, a beige box), and the build lists every empty slot.
 - **FAQs** and **Reviews** (with your Google rating and review count).
 - **Analytics:** visitors, top pages, how people found the site, devices, countries and the "Reserve seat" vs "Secure seat" result.
 
