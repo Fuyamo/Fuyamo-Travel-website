@@ -364,6 +364,48 @@
     videos.forEach((video) => watch.observe(video));
   }
 
+  // On phones the Moments rows are swiped by hand, and drift on their own in between (the second row the other way):
+  // a finger on a row stops it, and it carries on a few seconds after letting go. The list is in twice, so going past
+  // half way jumps back by half and the row never runs out. (Bigger screens move them with CSS.)
+  function driftMoments() {
+    const phone = window.matchMedia('(max-width: 759.98px)');
+    const rows = [...document.querySelectorAll('.moments__row')];
+    if (!rows.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const SPEED = 32; // px per second
+    const half = (row) => row.firstElementChild.scrollWidth / 2;
+    const state = rows.map((row, i) => ({ row, dir: i ? -1 : 1, pos: row.scrollLeft, holdUntil: 0 }));
+    state.forEach((s) => {
+      const hold = () => { s.holdUntil = Infinity; };
+      const release = () => { s.holdUntil = performance.now() + 2500; };
+      s.row.addEventListener('touchstart', hold, { passive: true });
+      s.row.addEventListener('touchend', release);
+      s.row.addEventListener('touchcancel', release);
+      s.row.addEventListener('scroll', () => {
+        if (!phone.matches) return;
+        const h = half(s.row);
+        if (s.row.scrollLeft >= h) s.row.scrollLeft -= h;
+        else if (s.row.scrollLeft <= 0) s.row.scrollLeft += h;
+      }, { passive: true });
+    });
+    let visible = false, running = false, last = 0;
+    const tick = (now) => {
+      if (!visible || !phone.matches) { running = false; return; }
+      const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+      last = now;
+      state.forEach((s) => {
+        if (now < s.holdUntil) { s.pos = s.row.scrollLeft; return; }
+        const h = half(s.row);
+        s.pos += s.dir * SPEED * dt;
+        if (s.pos >= h) s.pos -= h; else if (s.pos < 0) s.pos += h;
+        s.row.scrollLeft = s.pos;
+      });
+      requestAnimationFrame(tick);
+    };
+    const start = () => { if (running || !visible || !phone.matches) return; running = true; last = 0; requestAnimationFrame(tick); };
+    new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; start(); }).observe(rows[0].closest('.moments'));
+    phone.addEventListener('change', start);
+  }
+
   function setupSearch() {
     const input = cbEl('find-dest'), list = cbEl('find-list');
     let active = -1;
@@ -539,6 +581,7 @@
         observer.disconnect();
       }, { threshold: 0.35 }).observe(intro);
       playMoments();
+      driftMoments();
       setupSearch();
       fitReviews();
       document.fonts.ready.then(fitReviews);

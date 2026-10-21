@@ -354,6 +354,7 @@ address { font-style: normal; }
 .moments .center-head { padding: 0 20px; margin-bottom: 40px; }
 /* The polaroids drift right to left (a second row left to right) and pause on hover; the list is in twice, so moving
    by half loops seamlessly. The time grows with the number of photos (--n, 12 s each), so the speed stays the same.
+   On phones the rows can be swiped, and app.js does the drifting (faster, as only two photos fit on screen).
    With reduced motion they sit in rows that scroll sideways. */
 .moments__row { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); }
 .moments__track { display: flex; width: max-content; padding: 20px 0 40px; animation: marquee calc(var(--n, 10) * 12s) linear infinite; }
@@ -361,6 +362,11 @@ address { font-style: normal; }
 .moments__row--back .moments__track { animation-direction: reverse; }
 .moments__row:hover .moments__track, .moments__row:focus-within .moments__track { animation-play-state: paused; }
 @media (max-width: 559.98px) { .polaroid { width: 170px; } }
+@media (max-width: 759.98px) {
+  .moments__row { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .moments__row::-webkit-scrollbar { display: none; }
+  .moments__track { animation: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .moments__row { overflow-x: auto; scrollbar-width: none; -webkit-mask-image: none; mask-image: none; }
   .moments__row::-webkit-scrollbar { display: none; }
