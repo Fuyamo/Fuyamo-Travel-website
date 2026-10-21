@@ -1,8 +1,8 @@
 {
   "headers": {
-    "home": "/photos/uploads/2026-10/d73f2c-1d4e21bd1b1b4704a18f667406609be2m-q221.jpg",
+    "home": "/photos/headers/home.jpg",
     "trips": "/photos/uploads/2026-10/mozambique-1eq8.jpg",
-    "calendar": "",
+    "calendar": "/photos/uploads/2026-10/d73f2c-1d4e21bd1b1b4704a18f667406609be2m-5n1g.jpg",
     "services": "/photos/uploads/2026-10/barbados-021225-gettyimages-1900418473-kl72.jpg",
     "about": "",
     "how_to_book": "/photos/spare/hero-cappadocia.jpg",
@@ -17,7 +17,7 @@
   "why": [
     "/photos/uploads/2026-10/picturetheworld-my-web-size-31-bh8e.jpg",
     "/photos/uploads/2026-10/img-3578-e9sj.jpg",
-    "/photos/uploads/2026-10/img-1298-20le.jpg",
+    "/photos/uploads/2026-10/maxresdefault-l3hk.jpg",
     "/photos/uploads/2026-10/img-6596-2i6q.jpg",
     "/photos/uploads/2026-10/img-8486-n1b6.heic"
   ],
@@ -70,6 +70,26 @@
     {
       "image": "/photos/trips/vicfalls/4.webp",
       "caption": "Vic Falls",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-1192-ly41.jpg",
+      "caption": "Lesotho",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-1577-z3oy.jpg",
+      "caption": "Mozambique",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-4034-8ejr.jpg",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/trips/lesothofam/3.webp",
+      "caption": "Lesotho",
       "trip": ""
     }
   ],
