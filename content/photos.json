@@ -1,11 +1,11 @@
 {
   "headers": {
     "home": "/photos/headers/home.jpg",
-    "trips": "",
+    "trips": "/photos/uploads/2026-10/mozambique-1eq8.jpg",
     "calendar": "",
     "services": "/photos/uploads/2026-10/barbados-021225-gettyimages-1900418473-kl72.jpg",
     "about": "",
-    "how_to_book": "/photos/uploads/2026-10/gettyimages-1632384531-n9w2.jpg",
+    "how_to_book": "/photos/spare/hero-cappadocia.jpg",
     "corporate": "",
     "contact": ""
   },
@@ -30,6 +30,26 @@
     {
       "image": "/photos/uploads/2026-10/img-1601-ks07.jpg",
       "caption": "Lesotho",
+      "trip": ""
+    },
+    {
+      "image": "/photos/spare/main-cover.webp",
+      "caption": "Mozambique",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-4892-rd0j.jpg",
+      "caption": "Tanzania",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-6344-vl5q.jpg",
+      "caption": "Zanzibar",
+      "trip": ""
+    },
+    {
+      "image": "/photos/uploads/2026-10/img-0309-mgqt.jpg",
+      "caption": "Mozambique",
       "trip": ""
     }
   ],
