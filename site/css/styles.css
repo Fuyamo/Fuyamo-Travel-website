@@ -353,10 +353,10 @@ address { font-style: normal; }
 .moments + .destinations { padding-top: 0; }
 .moments .center-head { padding: 0 20px; margin-bottom: 40px; }
 /* The polaroids drift right to left (a second row left to right) and pause on hover; the list is in twice, so moving
-   by half loops seamlessly. The time grows with the number of photos (--n), so the speed stays the same.
+   by half loops seamlessly. The time grows with the number of photos (--n, 12 s each), so the speed stays the same.
    With reduced motion they sit in rows that scroll sideways. */
 .moments__row { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); }
-.moments__track { display: flex; width: max-content; padding: 20px 0 40px; animation: marquee calc(var(--n, 10) * 7s) linear infinite; }
+.moments__track { display: flex; width: max-content; padding: 20px 0 40px; animation: marquee calc(var(--n, 10) * 12s) linear infinite; }
 .moments__row--back { margin-top: -16px; }
 .moments__row--back .moments__track { animation-direction: reverse; }
 .moments__row:hover .moments__track, .moments__row:focus-within .moments__track { animation-play-state: paused; }
