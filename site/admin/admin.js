@@ -589,10 +589,44 @@
   // A trip's cover and gallery, which may also be used once somewhere else.
   const tripPhotos = () => new Set((S.trips || []).flatMap((t) => [t.cover].concat(t.gallery || [])).filter(Boolean));
 
+  // Deletes a photo or video that isn't used anywhere from the library (GitHub keeps it in the history). Nothing on
+  // the page being edited changes.
+  // Every photo the saved pages use (an unsaved change may have just taken one out, but the website still shows it).
+  function savedPhotos() {
+    const found = new Set();
+    const walk = (v) => {
+      if (typeof v === 'string') {
+        if (/^\/photos\//.test(v)) found.add(v);
+        else (v.match(/\]\((\/photos\/[^)\s]+)\)/g) || []).forEach((m) => { try { found.add(decodeURIComponent(m.slice(2, -1))); } catch (err) { /* not an address */ } });
+      } else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+    };
+    walk([S.photos, S.trips, S.posts]);
+    return found;
+  }
+  const deletable = (src, uses, trips) => !uses.has(src) && !trips.has(src) && !savedPhotos().has(src) && !/^\/photos\/headers\/home\./.test(src);
+  async function deletePhoto(src) {
+    if (!(await confirmBox('Delete this photo?', `“${photoName(src)}” isn’t used on the website. It will be removed from the photo library (GitHub keeps a copy in its history).`, { ok: 'Delete', danger: true }))) return false;
+    if (!S.pending.has(src)) {
+      try {
+        await commit([{ path: src.slice(1), remove: true }], `Photos: delete ${src.split('/').pop()}`);
+      } catch (err) {
+        toast(err.status === 401 ? 'Your GitHub access has expired. Replace it in Settings.' : err.status === 403 ? CANT_SAVE : "Couldn't delete: " + err.message, 'error');
+        return false;
+      }
+    }
+    S.pending.delete(src);
+    S.local.delete(src);
+    if (S.library) S.library = S.library.filter((x) => x !== src);
+    if (S.blobs) [...S.blobs].forEach(([sha, x]) => { if (x === src) S.blobs.delete(sha); });
+    toast('Deleted from the photo library.');
+    return true;
+  }
+  const CLEAR = ':remove'; // pickPhoto's answer when the photo is to be taken out of the spot
+
   function pickPhoto(title = 'Choose a photo', current = '', { video = false } = {}) {
     return new Promise((resolve) => {
       const d = dialog(`
-        <div class="picker__head"><h2 class="dialog__title">${h(title)}</h2><button class="icon-btn" data-x="close" aria-label="Close">${icon('close')}</button></div>
+        <div class="picker__head"><h2 class="dialog__title">${h(title)}</h2>${current ? `<button class="btn picker__remove" data-x="clear">${icon('trash', 16)}<span>Remove photo</span></button>` : ''}<button class="icon-btn" data-x="close" aria-label="Close">${icon('close')}</button></div>
         <label class="picker__upload">${icon('upload')}<span><strong>Upload from this device</strong><small>Any size, phone photos are fine${video ? ', and short videos (the first 8 seconds are used)' : ''}. Choose several to add them all to the library.</small></span><input type="file" accept="image/*,.heic,.heif${video ? ',video/*' : ''}" multiple hidden></label>
         <input class="picker__search" type="search" placeholder="Search photos">
         <div class="picker__grid"><p class="muted">Loading photos…</p></div>`, { wide: true, onClose: (v) => resolve(v || null) });
@@ -602,8 +636,9 @@
         const uses = photoUses(), trips = tripPhotos(), usedAt = (p) => (p !== current && uses.has(p) ? uses.get(p).where : '');
         const list = [...S.pending.keys()].concat(S.library || []).filter((p) => (video || !isVideo(p)) && (!term || p.toLowerCase().includes(term)));
         const tile = (p) => {
-          const where = usedAt(p);
-          return `<button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Used ' + where + '. Choose it to move it here.' : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : trips.has(p) ? '<span class="picker__used picker__used--trip">Trip photo</span>' : ''}</button>`;
+          const where = usedAt(p), bin = p !== current && deletable(p, uses, trips);
+          return `<div class="picker__cell"><button class="picker__item${where ? ' is-used' : ''}" data-src="${h(p)}"${where ? ` data-used="${h(where)}"` : ''} title="${h(where ? 'Used ' + where + '. Choose it to move it here.' : photoName(p))}">${photoImg(p)}${where ? '<span class="picker__used">Used</span>' : trips.has(p) ? '<span class="picker__used picker__used--trip">Trip photo</span>' : ''}</button>`
+            + `${bin ? `<button class="picker__delete" data-delete="${h(p)}" title="Delete from the photo library" aria-label="Delete ${h(photoName(p))}">${icon('trash', 15)}</button>` : ''}</div>`;
         };
         const free = list.filter((p) => !usedAt(p)), taken = list.filter((p) => usedAt(p));
         grid.innerHTML = list.length ? (free.length ? each(free, tile) : '<p class="picker__group">Every photo here is already on the website. Upload a new one.</p>')
@@ -621,6 +656,9 @@
       search.addEventListener('input', draw);
       d.el.addEventListener('click', (e) => {
         if (e.target.closest('[data-x="close"]')) d.close(null);
+        if (e.target.closest('[data-x="clear"]')) { d.close(CLEAR); return; }
+        const bin = e.target.closest('[data-delete]');
+        if (bin) { deletePhoto(bin.dataset.delete).then((done) => { if (done) draw(); }); return; }
         const item = e.target.closest('[data-src]');
         if (item) choose(item.dataset.src);
       });
@@ -776,6 +814,12 @@
     down(el) { move(el, 1); },
     async pick(el) {
       const src = await pickPhoto(el.dataset.title, getPath(V.draft, el.dataset.path), { video: /^moments\./.test(el.dataset.path) });
+      if (src === CLEAR) {
+        const moment = el.dataset.path.match(/^moments\.(\d+)\.image$/);
+        if (moment) V.draft.moments.splice(+moment[1], 1); else setPath(V.draft, el.dataset.path, '');
+        markDirty(); redraw();
+        return;
+      }
       if (src) { setPath(V.draft, el.dataset.path, src); markDirty(); redraw(); }
     },
   };
@@ -1114,7 +1158,6 @@
           const errors = [];
           if (!d.title.trim()) errors.push('Add a title.');
           if (!d.intro.trim()) errors.push('Add a short intro.');
-          if (!d.image) errors.push('Choose a photo.');
           if (!d.body.trim()) errors.push('Write the article.');
           if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) errors.push('Choose a date.');
           if (!original && S.posts.some((p) => p.slug === d.slug)) errors.push('Another article already uses that web address.');
@@ -1171,7 +1214,7 @@
             <div class="card__head"><h2 class="card__title">Photo library</h2>
               <label class="btn-primary">${icon('upload', 16)}<span id="upload-label">Upload photos</span><input type="file" accept="image/*,.heic,.heif,video/*" multiple hidden data-act-file="library"></label></div>
             <p class="card__hint">Add as many photos (and short videos for Moments) as you like at once. They’re saved straight away, then you place them from any photo frame below (they show first in the picker).${waiting.length ? ` ${waiting.length} uploaded photo${waiting.length === 1 ? ' isn’t' : 's aren’t'} on the website yet:` : ''}</p>
-            ${waiting.length ? `<div class="library-strip">${each(waiting, (p) => `<span class="library-strip__item" title="${h(photoName(p))}">${photoImg(p)}</span>`)}</div>` : ''}
+            ${waiting.length ? `<div class="library-strip">${each(waiting, (p) => `<span class="library-strip__item" title="${h(photoName(p))}">${photoImg(p)}${deletable(p, uses, trips) ? `<button class="picker__delete" data-act="deleteUpload" data-src="${h(p)}" title="Delete from the photo library" aria-label="Delete ${h(photoName(p))}">${icon('trash', 15)}</button>` : ''}</span>`)}</div>` : ''}
           </section>
           <section class="card">
             <h2 class="card__title">Moments worth the trip</h2>
@@ -1208,6 +1251,7 @@
         },
       },
       act: Object.assign({}, LIST_ACTS, {
+        async deleteUpload(el) { if (await deletePhoto(el.dataset.src)) redraw(); },
         async addMoment() {
           const src = await pickPhoto('New moment', '', { video: true });
           if (!src) return;

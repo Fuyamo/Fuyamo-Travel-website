@@ -364,6 +364,12 @@ label.is-busy { pointer-events: none; opacity: .7; }
 .picker__item { position: relative; }
 .picker__item.is-used img, .picker__item.is-used video { opacity: .6; }
 
+.picker__cell { position: relative; }
+.picker__cell .picker__item { display: block; width: 100%; }
+.picker__delete { position: absolute; z-index: 3; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 99px; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .94); color: #B3261E; box-shadow: 0 1px 4px rgba(0, 0, 0, .2); opacity: 0; transition: opacity .15s ease; }
+.picker__cell:hover .picker__delete, .library-strip__item:hover .picker__delete, .picker__delete:focus-visible { opacity: 1; }
+@media (hover: none) { .picker__delete { opacity: 1; } }
+.picker__remove { margin-left: auto; margin-right: 8px; min-height: 36px; color: #B3261E; }
 .picker__used.picker__used--trip { background: rgba(255, 190, 65, .92); color: var(--ink); }
 .picker__used { position: absolute; left: 6px; bottom: 6px; padding: 2px 7px; border-radius: 99px; background: rgba(17, 17, 17, .78); color: #fff; font: 600 11px/1.4 var(--sans, sans-serif); }
 @media (max-width: 559.98px) { .picker__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
