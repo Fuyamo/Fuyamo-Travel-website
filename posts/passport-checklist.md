@@ -81,7 +81,7 @@ Here's what South African passport holders need for each of our trips, checked i
 - **Zanzibar (Tanzania):** no visa, but you must buy Zanzibar's compulsory inbound travel insurance before you arrive. Our [Zanzibar guide](/travel-talk/zanzibar-nungwi-stone-town/) explains how.
 - **Bali (Indonesia):** a visa on arrival (or e-VoA bought online), plus the Bali tourist levy and the free All Indonesia arrival card. All three are covered in our [Bali guide](/travel-talk/bali-five-nights/).
 - **Thailand:** visa-free for short holidays (30 days at the time of writing). Every visitor must also complete the free Thailand Digital Arrival Card online in the three days before arrival.
-- **Dubai stopover (Thailand trip):** South Africans need a UAE visa arranged before travel, unless they hold a qualifying residence permit from certain countries. Ask us how this works for your departure, and see our [Thailand and Dubai guide](/travel-talk/thailand-phuket-dubai-stopover/).
+- **Dubai stopover (Thailand trip):** South Africans usually need a UAE visa arranged before travel. On our Thailand trip it's an online visa, and it's included in the trip price. See our [Thailand and Dubai guide](/travel-talk/thailand-phuket-dubai-stopover/).
 
 Visa and passport assistance is part of what we do, so if anything here doesn't match your situation (a different passport, a recent name change, a child travelling with grandparents) [WhatsApp us](/contact/) and we'll talk you through it.
 

@@ -13,7 +13,7 @@ Two countries, one trip. Our Thailand group trip flies from Johannesburg to Phuk
 - **Trip length:** 6 nights, 7 days, with a stopover in Dubai.
 - **Getting there:** Johannesburg to Dubai is about 8 hours, and Dubai to Phuket about 6 and a half. Flights and transfers are included on our trip.
 - **Time difference:** Thailand is 5 hours ahead of South Africa, and Dubai 2 hours ahead.
-- **Visa:** none for Thailand on a short holiday, but most South Africans need a UAE visa for the Dubai stopover (details below).
+- **Visa:** none for Thailand on a short holiday. The UAE visa for the Dubai stopover is an online visa, and it's included in the trip price.
 - **Money:** Thai baht in Thailand, UAE dirham in Dubai.
 - **Plugs:** Thai sockets take flat and round two-pin plugs, 220V. Bring a universal adapter.
 - **Our 2027 departures:** 15–21 June and 5–11 December, R29,500 per person sharing.
@@ -28,7 +28,9 @@ Dubai is very hot in June (often above 40°C) and pleasantly warm in December. D
 
 ### Do South Africans need a visa for Dubai?
 
-Yes, in most cases. South African passport holders need a UAE visit visa arranged before they travel. Since June 2026, South Africans who hold a valid residence permit from certain countries (including the US, UK, EU countries, Canada and Australia) can get a visa on arrival instead. Your passport must be valid for at least six months. Ask us how the visa works for your departure.
+Yes, in most cases. South African passport holders need a UAE visit visa arranged before they travel. (Since June 2026, South Africans who hold a valid residence permit from certain countries, including the US, UK, EU countries, Canada and Australia, can get a visa on arrival instead.)
+
+On our Thailand trip, **the Dubai visa is included**. It's an online visa, so there's no embassy visit or queue: it's done before you fly. Your passport must be valid for at least six months.
 
 ## Phuket: what the week looks like
 
@@ -119,6 +121,7 @@ Both are good. June suits travellers who want quieter beaches and don't mind a p
 - Accommodation with daily breakfast
 - Ground transport
 - Dubai desert experience on the stopover
+- Your Dubai (UAE) online visa for the stopover
 - Phuket Ancient City tour
 - Island hopping to Phi Phi or Maya Bay
 - Elephant sanctuary
@@ -132,6 +135,10 @@ A R3,500 deposit reserves your seat, and the balance is paid in instalments, set
 ### How long is the flight from South Africa to Thailand?
 
 There's no direct flight. Via Dubai, it's about 8 hours to Dubai and 6 and a half hours on to Phuket, plus the time in between.
+
+### Do I need a visa for the Dubai stopover?
+
+Most South Africans do, but it's an online visa and it's included in our Thailand trip, so it's arranged before you fly.
 
 ### Do South Africans need a visa for Thailand?
 
