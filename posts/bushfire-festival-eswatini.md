@@ -1,8 +1,8 @@
 ---
 title: "Bushfire Festival 2027: tickets, camping and getting there"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-21
-image: ""
+image: "/photos/trips/bushfire/1 cover.webp"
 intro: "Going to MTN Bushfire 2027 in Eswatini? Getting there from Johannesburg, tickets, the border, camping, what to pack and our all-in festival trip."
 ---
 
