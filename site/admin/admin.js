@@ -848,6 +848,51 @@
       if (src) { setPath(V.draft, el.dataset.path, src); markDirty(); redraw(); }
     },
   };
+  // Moves a list item to another position (position picker, or dragging a card by its handle).
+  function moveItem(listPath, from, to) {
+    const list = getPath(V.draft, listPath);
+    if (!list || from === to || to < 0 || to >= list.length) return;
+    list.splice(to, 0, list.splice(from, 1)[0]);
+    markDirty(); redraw();
+  }
+  let dragging = null;
+  document.addEventListener('pointerdown', (e) => {
+    const handle = e.target.closest('.drag-handle');
+    if (handle) handle.closest('[data-drag-list]').draggable = true;
+  });
+  // A press on the handle that didn't turn into a drag leaves the card as it was.
+  document.addEventListener('pointerup', () => {
+    if (!dragging) document.querySelectorAll('[data-drag-list][draggable="true"]').forEach((x) => { x.draggable = false; });
+  });
+  document.addEventListener('dragstart', (e) => {
+    const card = e.target.closest && e.target.closest('[data-drag-list][draggable="true"]');
+    if (!card) return;
+    dragging = { list: card.dataset.dragList, i: +card.dataset.i };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    card.classList.add('is-dragging');
+  });
+  document.addEventListener('dragover', (e) => {
+    const card = dragging && e.target.closest && e.target.closest('[data-drag-list]');
+    if (!card || card.dataset.dragList !== dragging.list) return;
+    e.preventDefault();
+    document.querySelectorAll('.is-drop').forEach((x) => x !== card && x.classList.remove('is-drop'));
+    card.classList.add('is-drop');
+  });
+  document.addEventListener('drop', (e) => {
+    const card = dragging && e.target.closest && e.target.closest('[data-drag-list]');
+    if (!card || card.dataset.dragList !== dragging.list) return;
+    e.preventDefault();
+    const { list, i } = dragging;
+    dragging = null;
+    moveItem(list, i, +card.dataset.i);
+  });
+  document.addEventListener('dragend', () => {
+    dragging = null;
+    document.querySelectorAll('[data-drag-list][draggable="true"]').forEach((x) => { x.draggable = false; });
+    document.querySelectorAll('.is-dragging, .is-drop').forEach((x) => x.classList.remove('is-dragging', 'is-drop'));
+  });
+
   function move(el, dir) {
     const list = getPath(V.draft, el.dataset.list), i = +el.dataset.i, j = i + dir;
     if (j < 0 || j >= list.length) return;
@@ -859,7 +904,8 @@
   const field = (label, input, hint) => `<label class="field"><span class="field__label">${label}</span>${input}${hint ? `<small class="field__hint">${hint}</small>` : ''}</label>`;
   const text = (path, value, attrs = '') => `<input data-bind="${path}" value="${h(value)}" ${attrs}>`;
   const area = (path, value, rows = 3, attrs = '') => `<textarea data-bind="${path}" rows="${rows}" ${attrs}>${h(value)}</textarea>`;
-  const rowTools = (list, i, n) => `<div class="row-tools">
+  // Longer lists also get a position picker, to move an item anywhere in one go (e.g. the last moment to the front).
+  const rowTools = (list, i, n) => `<div class="row-tools">${n > 4 ? `<select class="row-tools__pos" data-move-list="${list}" data-i="${i}" title="Move to position" aria-label="Position">${each([...Array(n).keys()], (k) => `<option value="${k}"${k === i ? ' selected' : ''}>${k + 1}</option>`)}</select>` : ''}
       <button class="icon-btn" data-act="up" data-list="${list}" data-i="${i}" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>${icon('up', 16)}</button>
       <button class="icon-btn" data-act="down" data-list="${list}" data-i="${i}" aria-label="Move down" ${i === n - 1 ? 'disabled' : ''}>${icon('down', 16)}</button>
       <button class="icon-btn icon-btn--danger" data-act="remove" data-list="${list}" data-i="${i}" aria-label="Remove">${icon('trash', 16)}</button></div>`;
@@ -1244,7 +1290,7 @@
           <section class="card">
             <h2 class="card__title">Moments worth the trip</h2>
             <p class="card__hint">The drifting polaroids on the home page. Add as many as you like: real travellers having fun work best. Short videos work too: they play silently on a loop (the first 8 seconds). Each links to the trip in its caption, or the one you pick.</p>
-            <div class="moments">${each(d.moments, (m, i) => `<div class="moment">
+            <div class="moments">${each(d.moments, (m, i) => `<div class="moment" data-drag-list="moments" data-i="${i}"><span class="drag-handle" title="Drag to move" aria-hidden="true">⠿</span>
               ${slot(`moments.${i}.image`, m.image, '', 'Moment photo')}
               ${text(`moments.${i}.caption`, m.caption, 'placeholder="Caption, e.g. Zanzibar"')}
               <select data-bind="moments.${i}.trip" title="The trip this photo links to"><option value="">Link: from caption</option>${each(S.trips, (t) => `<option value="${h(t.key)}"${t.key === m.trip ? ' selected' : ''}>Link: ${h(t.menu_label || t.name)}</option>`)}</select>
@@ -2152,6 +2198,7 @@
   document.addEventListener('change', (e) => {
     if (e.target.dataset && e.target.dataset.bind) bind(e.target);
     if (e.target.dataset && e.target.dataset.actFile && V.file) V.file[e.target.dataset.actFile](e.target);
+    if (e.target.dataset && e.target.dataset.moveList && V.draft) moveItem(e.target.dataset.moveList, +e.target.dataset.i, +e.target.value);
   });
   document.addEventListener('submit', (e) => {
     const form = e.target.closest('form[data-form]');
