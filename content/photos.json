@@ -3,18 +3,18 @@
     "home": "/photos/headers/home.jpg",
     "trips": "/photos/headers/trips.webp",
     "calendar": "/photos/headers/calendar.webp",
-    "services": "/photos/headers/services.webp",
+    "services": "/photos/uploads/2026-10/barbados-021225-gettyimages-1900418473-kl72.jpg",
     "about": "/photos/headers/about.webp",
-    "how_to_book": "/photos/headers/how-to-book.webp",
+    "how_to_book": "/photos/uploads/2026-10/gettyimages-1632384531-n9w2.jpg",
     "corporate": "/photos/headers/corporate.webp",
     "contact": "/photos/headers/contact.webp",
     "travel_talk": "/photos/headers/travel-talk.webp",
     "yamo": "/photos/headers/yamo.webp"
   },
   "intro": [
-    "/photos/intro/1.webp",
-    "/photos/intro/2.webp",
-    "/photos/intro/3.webp"
+    "/photos/uploads/2026-10/dji-fly-20250923-061446-168-175863299163-fsi4.jpg",
+    "/photos/uploads/2026-10/img-2179-xlas.jpg",
+    "/photos/uploads/2026-10/barbados-021225-gettyimages-1900418473-kl72.jpg"
   ],
   "why": [
     "/photos/why/1 Everything sorted.webp",
@@ -100,7 +100,7 @@
       "trip": "zanzibar"
     },
     {
-      "image": "/photos/uploads/2026-10/img-8486-n1b6.heic",
+      "image": "/photos/uploads/2026-10/screenshot-2026-10-21-at-15-06-46-ujbx.jpg",
       "caption": "Zanzibar",
       "trip": "zanzibar"
     },
@@ -115,8 +115,13 @@
       "trip": ""
     },
     {
-      "image": "/photos/uploads/2026-10/img-8554-a28x.heic",
-      "caption": "Zanzibar",
+      "image": "/photos/uploads/2026-10/img-1577-z3oy.jpg",
+      "caption": "Mozambique",
+      "trip": ""
+    },
+    {
+      "image": "/photos/moments/05 Bali.webp",
+      "caption": "Bali",
       "trip": ""
     }
   ],
