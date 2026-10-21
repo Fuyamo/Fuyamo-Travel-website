@@ -74,14 +74,14 @@ Our [Lesotho Snowcation Family Edition](/trips/lesothofam/) is a great first bor
 Here's what South African passport holders need for each of our trips, checked in October 2026. Entry rules change, so check again close to your departure, or ask us.
 
 - **Lesotho (Snowcation):** no visa. A passport is required; an ID card isn't enough.
-- **Eswatini (Bushfire Festival):** no visa. Bring your passport.
+- **Eswatini (Bushfire Festival):** no visa. Bring your passport. Our [Bushfire guide](/travel-talk/bushfire-festival-eswatini/) covers the border and festival weekend.
 - **Mozambique:** no visa for stays of up to 30 days.
-- **Namibia:** no visa for South Africans on holiday.
-- **Zimbabwe, Zambia and Botswana (3 Countries):** no visa for South Africans.
+- **Namibia:** no visa for South Africans on holiday. See our [Namibia guide](/travel-talk/namibia-swakopmund-walvis-bay/).
+- **Zimbabwe, Zambia and Botswana (3 Countries):** no visa for South Africans, but bring plenty of blank pages. See our [Victoria Falls guide](/travel-talk/victoria-falls-zimbabwe-zambia-chobe/).
 - **Zanzibar (Tanzania):** no visa, but you must buy Zanzibar's compulsory inbound travel insurance before you arrive. Our [Zanzibar guide](/travel-talk/zanzibar-nungwi-stone-town/) explains how.
 - **Bali (Indonesia):** a visa on arrival (or e-VoA bought online), plus the Bali tourist levy and the free All Indonesia arrival card. All three are covered in our [Bali guide](/travel-talk/bali-five-nights/).
 - **Thailand:** visa-free for short holidays (30 days at the time of writing). Every visitor must also complete the free Thailand Digital Arrival Card online in the three days before arrival.
-- **Dubai stopover (Thailand trip):** South Africans need a UAE visa arranged before travel, unless they hold a qualifying residence permit from certain countries. Ask us how this works for your departure.
+- **Dubai stopover (Thailand trip):** South Africans need a UAE visa arranged before travel, unless they hold a qualifying residence permit from certain countries. Ask us how this works for your departure, and see our [Thailand and Dubai guide](/travel-talk/thailand-phuket-dubai-stopover/).
 
 Visa and passport assistance is part of what we do, so if anything here doesn't match your situation (a different passport, a recent name change, a child travelling with grandparents) [WhatsApp us](/contact/) and we'll talk you through it.
 
