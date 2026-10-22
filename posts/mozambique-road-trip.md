@@ -1,9 +1,9 @@
 ---
 title: "Mozambique road trip from Johannesburg: Maputo and Bilene"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-13
 updated: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/vclass598dca-pwq8.jpg"
 intro: "Your guide to a Mozambique road trip from Johannesburg: the drive and border, passport and malaria advice, money, food and our Maputo and Bilene itinerary."
 ---
 
