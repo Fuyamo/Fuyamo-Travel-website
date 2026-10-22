@@ -1,9 +1,9 @@
 ---
 title: "Zanzibar from South Africa: Nungwi, Stone Town and tips"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-13
 updated: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/img-6358-o2n5.heic"
 intro: "Going to Zanzibar from South Africa? Nungwi vs Stone Town, the visa and compulsory insurance, money, the best time to go and how our 6-day trip works."
 ---
 
