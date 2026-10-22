@@ -1,9 +1,9 @@
 ---
 title: "Passport checklist for South Africans: renewal and visas"
-category: Visa & passports
+category: "Visa & passports"
 date: 2026-10-13
 updated: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/istock-1355827371-scaled-ju99.jpg"
 intro: "Run this passport checklist before you book: validity and blank-page rules, renewing at Home Affairs or a bank, documents for children, and visas for our trips."
 ---
 
