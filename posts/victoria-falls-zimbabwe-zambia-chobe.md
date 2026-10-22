@@ -1,8 +1,8 @@
 ---
 title: "Victoria Falls from Johannesburg: Zimbabwe, Zambia and Chobe"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/dest-victoria-falls-ap8e.jpg"
 intro: "Victoria Falls from Johannesburg: the Zimbabwe vs Zambia side, a Chobe day trip, Devil's Pool, visas for South Africans, October weather, money and tips."
 ---
 
