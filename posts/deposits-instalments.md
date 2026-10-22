@@ -1,9 +1,9 @@
 ---
 title: "How to pay for a holiday in instalments, with no interest"
-category: Booking tips
+category: "Booking tips"
 date: 2026-10-13
 updated: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/paying-fkza.jpg"
 intro: "Pay for your holiday in instalments, like a lay-by for travel. How our deposits and payment plans work, with real examples and tips to save for your trip."
 ---
 
