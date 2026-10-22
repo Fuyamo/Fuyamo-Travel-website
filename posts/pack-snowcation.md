@@ -1,9 +1,9 @@
 ---
 title: "What to pack for Afriski: a Lesotho snow trip packing list"
-category: Packing
+category: "Packing"
 date: 2026-10-13
 updated: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/280900864-5256575571073700-7179825609683-gk2c.jpg"
 intro: "What to pack for Afriski and a Lesotho snow trip: the full packing list for adults and kids, what to wear on the slopes and the documents for the border."
 ---
 
