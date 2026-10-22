@@ -32,6 +32,7 @@ Options -Indexes
   ExpiresByType image/jpeg "access plus 1 month"
   ExpiresByType image/png "access plus 1 month"
   ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType image/avif "access plus 1 month"
   ExpiresByType image/svg+xml "access plus 1 month"
   ExpiresByType font/woff2 "access plus 1 year"
   ExpiresByType application/pdf "access plus 1 week"
@@ -46,4 +47,5 @@ Options -Indexes
   AddType image/webp .webp
   AddType font/woff2 .woff2
   AddType video/mp4 .mp4
+  AddType image/avif .avif
 </IfModule>
