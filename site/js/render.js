@@ -41,6 +41,8 @@ window.FUYAMO_RENDER = (function (C) {
     ? { href: 'mailto:' + SITE.email + '?subject=' + encodeURIComponent('Corporate travel enquiry'), attrs: '', fab: '', short: 'Email us', label: 'Email Fuyamo', email: true }
     : { href: WA.general, attrs: EXT + CALLBACK, fab: EXT + ' data-wa="floating"', short: 'WhatsApp us', label: 'WhatsApp Fuyamo', email: false };
 
+  // The ↗ "opens elsewhere" arrow, drawn (iPhones show the character itself as a blue emoji).
+  const ARROW_NE = '<svg class="arrow-ne" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>';
   const pin = (size) => '<span class="pin' + (size ? ' pin--' + size : '') + '"></span>';
   // hero: the page's main photo, fetched first; everything else loads lazily.
   // An empty slot (no photo chosen yet) leaves its frame's plain background.
@@ -384,7 +386,7 @@ window.FUYAMO_RENDER = (function (C) {
       <div class="media trip-card__media">
         ${cover(t.hero, t.fullName + ' group trip')}
         <div class="tags"><span class="tag">${t.mode}</span>${t.edition ? `<span class="tag tag--edition">${esc(t.edition)}</span>` : ''}</div>
-        <span class="corner-arrow" aria-hidden="true">↗</span>
+        <span class="corner-arrow" aria-hidden="true">${ARROW_NE}</span>
       </div>
       <div class="trip-card__body">
         <span class="place">${pin()}${esc(t.place)}</span>
@@ -490,7 +492,7 @@ window.FUYAMO_RENDER = (function (C) {
       return `<a href="${t.href}" class="media bento__item" style="--span:span ${span}">
         ${cover(t.hero, t.fullName + ' group trip')}
         <div class="fade-bottom"></div>
-        <span class="bento__arrow" aria-hidden="true">↗</span>
+        <span class="bento__arrow" aria-hidden="true">${ARROW_NE}</span>
         <div class="bento__info">
           <div class="stack"><span class="bento__name">${esc(t.fullName)}</span><span class="place">${pin()}${esc(t.place)}</span></div>
           <span class="from"><small>FROM</small><strong>${esc(t.price)}</strong></span>
@@ -568,7 +570,7 @@ window.FUYAMO_RENDER = (function (C) {
             <span class="review__g reviews__g" aria-hidden="true">G</span>
             <h2 class="reviews__title">Rated ${esc(SITE.reviews.rating)} on Google</h2>
             <span class="reviews__stars" aria-hidden="true">★★★★★</span>
-            <a href="${esc(SITE.reviews.link)}" ${EXT} class="reviews__count">${esc(SITE.reviews.count)} reviews ↗</a>
+            <a href="${esc(SITE.reviews.link)}" ${EXT} class="reviews__count">${esc(SITE.reviews.count)} reviews ${ARROW_NE}</a>
           </div>
           ${arrows('reviews-rail', true, ' reviews')}
         </div>
@@ -1063,7 +1065,7 @@ window.FUYAMO_RENDER = (function (C) {
           <p class="lede">Every Fuyamo group trip is on Yamo. Reserve your seat with a deposit and pay the rest in instalments before you fly.</p>
         </div>
         <div class="yamo-shots yamo-shots--3">${yamoShots(YAMO_BOOK)}</div>
-        <a href="${Y.trips}" ${EXT} class="btn-line btn-line--lg yamo-section__cta">See live trips on Yamo ↗</a>
+        <a href="${Y.trips}" ${EXT} class="btn-line btn-line--lg yamo-section__cta">See live trips on Yamo ${ARROW_NE}</a>
       </section>
 
       <section class="band">
@@ -1071,7 +1073,7 @@ window.FUYAMO_RENDER = (function (C) {
           <h2>Where have <span>you</span> been?</h2>
           <p>Free for travellers. Start with your camera, make an account after.</p>
           <a href="${Y.scan}" ${EXT} class="btn-amber">Scan your passport on Yamo →</a>
-          <a href="${Y.agencies}" ${EXT} class="yamo-cta__agency">Run a travel agency? See Yamo for agencies ↗</a>
+          <a href="${Y.agencies}" ${EXT} class="yamo-cta__agency">Run a travel agency? See Yamo for agencies ${ARROW_NE}</a>
         </div>
       </section>`;
   }
