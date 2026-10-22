@@ -1,9 +1,9 @@
 ---
 title: "Bali from South Africa: a 7-day itinerary, visa and costs"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-13
 updated: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/heading-4-npr6.jpg"
 intro: "Planning Bali from South Africa? Our 7-day itinerary covers Ubud, Nusa Penida, Uluwatu and Canggu, plus the visa on arrival, tourist levy, money and weather."
 ---
 
