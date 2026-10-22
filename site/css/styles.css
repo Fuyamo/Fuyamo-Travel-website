@@ -964,7 +964,7 @@ html[data-ab="1"] .ab-1 { display: inline; }
 .footer__col span { font: 500 11px var(--mono); letter-spacing: .1em; color: #8A857C; margin-bottom: 4px; }
 .footer__col a { text-decoration: none; }
 .footer__col a:hover { color: var(--amber); }
-.footer__legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 16px; font: 400 11.5px var(--mono); letter-spacing: .04em; color: #7A756C; }
+.footer__legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 16px; font: 400 11.5px var(--mono); letter-spacing: .04em; color: #A39E95; }
 .footer__legal a { text-decoration: underline; text-underline-offset: 3px; }
 .footer__legal a:hover { color: #fff; }
 
