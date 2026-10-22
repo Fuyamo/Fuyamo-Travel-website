@@ -1,8 +1,8 @@
 ---
 title: "Thailand from South Africa: Phuket, Phi Phi and Dubai"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-21
-image: ""
+image: "/photos/uploads/2026-10/best-cities-in-thailand-sa9p.jpg"
 intro: "Thailand from South Africa with a Dubai stopover: visas for both, our Phuket itinerary, Phi Phi and Maya Bay, June vs December weather, money and tips."
 ---
 
