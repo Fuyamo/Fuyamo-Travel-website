@@ -10,6 +10,7 @@ window.FUYAMO = (function () {
   // What the admin manages (content/), as build.command published it in js/data.js.
   const DATA = Object.assign({ trips: [], faqs: [], reviews: { reviews: [] } }, window.FUYAMO_DATA);
   const PHOTO = Object.assign({ headers: {}, moments: [], intro: [], why: [], about: [], services: [] }, DATA.photos);
+  const SRCSET = DATA.srcsets || {}; // a photo's smaller copies (made by the build), so phones load a fitting size
 
   const SITE = {
     // The live address. Used for WhatsApp/Facebook link previews, the sitemap and canonical links.
@@ -296,7 +297,7 @@ window.FUYAMO = (function () {
   const POSTS = window.FUYAMO_POSTS || [];
 
   return {
-    PHOTOS, PHOTO, LOGOS, SITE, PAGES, headerName, PATHS, MONTHS, MONTHS_FULL, TRIPS, WHY, WHY_ICONS, REVIEWS, REVIEW_COLORS, MOMENTS, FAQS,
+    PHOTOS, PHOTO, SRCSET, LOGOS, SITE, PAGES, headerName, PATHS, MONTHS, MONTHS_FULL, TRIPS, WHY, WHY_ICONS, REVIEWS, REVIEW_COLORS, MOMENTS, FAQS,
     PRIVACY, SERVICES, VALUES, CARD_ICONS, CORP_WHY, CORP_TABS, CORP_FIELDS, CORP_INCLUDES, CORP_INCLUDES_DEFAULT, CLIENTS, ACCREDITATIONS, POSTS,
   };
 })();

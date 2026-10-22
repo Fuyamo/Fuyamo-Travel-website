@@ -44,7 +44,16 @@ window.FUYAMO_RENDER = (function (C) {
   const pin = (size) => '<span class="pin' + (size ? ' pin--' + size : '') + '"></span>';
   // hero: the page's main photo, fetched first; everything else loads lazily.
   // An empty slot (no photo chosen yet) leaves its frame's plain background.
-  const cover = (src, alt, hero) => (src ? '<img class="cover" src="' + esc(src) + '" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"') + '>' : '');
+  // A photo with its smaller copies (C.SRCSET, made by the build), so the browser picks the size that fits: full width
+  // for headers, about a third of a computer screen or half a phone screen for the rest. AVIF copies go in a <picture>
+  // (browsers without AVIF get the original); JPEG copies go straight on the <img>.
+  function photoTag(src, attrs, hero) {
+    const s = C.SRCSET[src], sizes = hero ? '100vw' : '(max-width: 760px) 50vw, 33vw';
+    if (!s) return '<img src="' + esc(src) + '"' + attrs + '>';
+    if (s.type === 'image/jpeg') return '<img src="' + esc(src) + '" srcset="' + esc(s.set) + '" sizes="' + sizes + '"' + attrs + '>';
+    return '<picture><source type="' + s.type + '" srcset="' + esc(s.set) + '" sizes="' + sizes + '"><img src="' + esc(src) + '"' + attrs + '></picture>';
+  }
+  const cover = (src, alt, hero) => (src ? photoTag(src, ' class="cover" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"'), hero) : '');
   // Dates like "16–18 Jul 2027" would otherwise break after the dash in narrow cards.
   const keepTogether = (text) => '<span class="nowrap">' + esc(text) + '</span>';
   const inlinePhoto = (src) => (src ? '<span class="inline-photo">' + cover(src) + '</span>' : '');
@@ -334,7 +343,7 @@ window.FUYAMO_RENDER = (function (C) {
                 </div>
                 <div class="passport__page">
                   <div class="passport__row"><span>MOMENTS</span><span>NO. 2 / 22</span></div>
-                  <figure class="passport__photo">${PHOTO.yamo_passport ? `<img src="${esc(PHOTO.yamo_passport)}" alt="" loading="eager">` : '<span class="passport__blank"></span>'}<figcaption>BILENE · 12–16 FEB</figcaption></figure>
+                  <figure class="passport__photo">${PHOTO.yamo_passport ? photoTag(PHOTO.yamo_passport, ' alt="" loading="eager"') : '<span class="passport__blank"></span>'}<figcaption>BILENE · 12–16 FEB</figcaption></figure>
                 </div>
               </div>
             </div>`;
@@ -494,7 +503,7 @@ window.FUYAMO_RENDER = (function (C) {
     return `
       <section class="frame">
         <div class="hero">
-          <img class="cover" src="${esc(PAGES.home.image)}" alt="" fetchpriority="high" style="object-position:${esc(PAGES.home.imagePosition || 'center')}">
+          ${photoTag(PAGES.home.image, ` class="cover" alt="" fetchpriority="high" style="object-position:${esc(PAGES.home.imagePosition || 'center')}"`, true)}
           <div class="hero__shade"></div>
           <div class="hero__content">
             <h1 class="hero__title">Time to travel.</h1>

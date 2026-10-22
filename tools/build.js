@@ -174,14 +174,14 @@ const VIDEO_SECONDS = 8; // longer clips are cut to their first 8 seconds
 const slugify = (name) => name.replace(PHOTO_FILE, '').replace(VIDEO_FILE, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 // Upright, at most maxPx on the longest side, as JPEG (macOS ImageIO, which also reads iPhone HEIC photos).
-function saveJpeg(src, out, maxPx, quality) {
+function saveJpeg(src, out, maxPx, quality, type = 'public.jpeg') {
   ObjC.import('ImageIO');
   const source = $.CGImageSourceCreateWithURL($.NSURL.fileURLWithPath(src), null);
   const image = source && $.CGImageSourceCreateThumbnailAtIndex(source, 0, $({
     kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: maxPx,
   }));
   if (!image) throw new Error('Could not read the photo ' + src);
-  const dest = $.CGImageDestinationCreateWithURL($.NSURL.fileURLWithPath(out), $('public.jpeg'), 1, null);
+  const dest = $.CGImageDestinationCreateWithURL($.NSURL.fileURLWithPath(out), $(type), 1, null);
   $.CGImageDestinationAddImage(dest, image, $({ kCGImageDestinationLossyCompressionQuality: quality }));
   if (!$.CGImageDestinationFinalize(dest)) throw new Error('Could not save ' + out);
 }
@@ -218,19 +218,54 @@ function publishVideo(siteDir, src, rel) {
   return { video: out, poster: exists(still) ? poster : '' };
 }
 
+// Smaller copies of a published photo, by width, so a phone downloads a size that fits the screen instead of the
+// full photo. They're AVIF where this Mac can write it (often a quarter of the JPEG's size; the page offers the
+// original to browsers without AVIF), JPEG otherwise. Returns { type, set: "a-480.avif 480w, …", files }.
+const PHOTO_WIDTHS = [480, 960, 1600];
+const AVIF = (() => {
+  try {
+    ObjC.import('ImageIO');
+    const types = ObjC.castRefToObject($.CGImageDestinationCopyTypeIdentifiers());
+    for (let i = 0; i < types.count; i++) if (ObjC.unwrap(types.objectAtIndex(i)) === 'public.avif') return true;
+  } catch (err) { /* no ImageIO list: use JPEG */ }
+  return false;
+})();
+function publishSizes(siteDir, out, quality) {
+  const [w, h] = sh(`sips -g pixelWidth -g pixelHeight ${q(siteDir + '/' + out)} | awk '/pixel/ {print $2}'`).split(/\s+/).map(Number);
+  const ext = AVIF ? 'avif' : 'jpg', files = [], set = [];
+  const widths = PHOTO_WIDTHS.filter((width) => width < w * 0.9).concat(AVIF ? [w] : []); // AVIF also beats the full-size original
+  widths.forEach((width) => {
+    const copy = out.replace(/\.[a-z]+$/i, '') + (width === w ? '' : '-' + width) + '.' + ext;
+    if (copy === out) return;
+    if (sh(`[ ${q(siteDir + '/' + copy)} -nt ${q(siteDir + '/' + out)} ] && echo fresh || echo stale`) === 'stale') {
+      saveJpeg(siteDir + '/' + out, siteDir + '/' + copy, Math.round(width * Math.max(w, h) / w), AVIF ? 0.6 : quality, AVIF ? 'public.avif' : 'public.jpeg');
+    }
+    files.push(copy);
+    set.push(copy + ' ' + width + 'w');
+  });
+  if (!set.length) return { files, set: '' };
+  return { type: AVIF ? 'image/avif' : 'image/jpeg', set: (AVIF ? set : set.concat(out + ' ' + w + 'w')).join(', '), files };
+}
+
 // Keeps track of the photos published in this build, so the ones no longer used can be removed at the end.
 function photoPublisher(root, notes) {
-  const siteDir = root + '/site', made = new Set();
+  const siteDir = root + '/site', made = new Set(), srcsets = {};
   // "/photos/trips/bali/1 cover.webp" → "assets/img/trips/trips-bali-1-cover.webp"
   const publish = (src, section, where) => {
     if (!src) { notes.push(`${where}: a photo is missing. Choose one in the admin.`); return ''; }
     const file = root + '/' + src.replace(/^\//, '');
     if (!exists(file)) { notes.push(`${where}: the photo ${src} isn't in the photos folder.`); return ''; }
-    const out = publishPhoto(siteDir, file, 'assets/img/' + section + '/' + slugify(src.replace(/^\/?photos\//, '')),
-      PHOTO_SIZES[section], section === 'moments' ? 0.62 : 0.72);
+    const quality = section === 'moments' ? 0.62 : 0.72;
+    const out = publishPhoto(siteDir, file, 'assets/img/' + section + '/' + slugify(src.replace(/^\/?photos\//, '')), PHOTO_SIZES[section], quality);
     made.add(out);
+    if (!(out in srcsets)) {
+      const sizes = publishSizes(siteDir, out, quality);
+      sizes.files.forEach((f) => made.add(f));
+      if (sizes.set) srcsets[out] = { type: sizes.type, set: sizes.set };
+    }
     return out;
   };
+  publish.srcsets = srcsets;
   // A video (Moments only): { video, poster }, both empty if it couldn't be used.
   publish.video = (src, section, where) => {
     const file = root + '/' + String(src).replace(/^\//, '');
@@ -443,6 +478,7 @@ function run(argv) {
 
   // 2. Trips, FAQs, reviews and photos: content/ → site/js/data.js (and the photos → site/assets/img/).
   const data = loadContent(ROOT, photo, notes);
+  data.srcsets = photo.srcsets; // every published photo's smaller copies, for cover() in render.js
   photo.cleanUp();
   write(SITE_DIR + '/js/data.js', '/* Generated by tools/build.js from content/ (edited in the admin). Don\'t edit this file. */\n'
     + 'window.FUYAMO_DATA = ' + JSON.stringify(data, null, 1) + ';\n');
