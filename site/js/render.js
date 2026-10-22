@@ -152,6 +152,7 @@ window.FUYAMO_RENDER = (function (C) {
       <div class="mega" id="mega" hidden><div class="mega__inner"></div></div>
       <div class="mobile-menu" id="mobile-menu" hidden>
         ${each(NAV, ([label, k]) => `<a href="${link(k)}" class="mobile-menu__link${k === active ? ' is-active" aria-current="page' : ''}">${label}<span aria-hidden="true">→</span></a>`)}
+        <a href="${link('yamo')}" class="mobile-menu__link${active === 'yamo' ? ' is-active" aria-current="page' : ''}">✦ Yamo<span aria-hidden="true">→</span></a>
         <a href="${contact.href}" ${contact.attrs} class="mobile-menu__wa">${contact.short}</a>
       </div>`;
   }

@@ -158,8 +158,12 @@ address { font-style: normal; }
 .mobile-menu__link span { color: rgba(255, 255, 255, .45); }
 .mobile-menu__wa { text-decoration: none; margin-top: 14px; display: flex; justify-content: center; border: 1.5px solid rgba(255, 255, 255, .55); color: #fff; font: 500 16px/1 var(--sans); padding: 16px; border-radius: 999px; }
 
+/* Phones and tablets: the bar keeps one button, WhatsApp (Email on the corporate page), in the white style; Yamo
+   moves into the menu. */
 @media (max-width: 979.98px) {
-  .nav__links, .nav__wa, .mega { display: none; }
+  .nav__links, .nav__yamo, .mega { display: none; }
+  .nav__wa { background: #fff; border-color: #fff; color: var(--ink); font-weight: 500; padding: 11px 15px; white-space: nowrap; }
+  .nav__wa:hover { color: var(--ink); background: var(--paper); }
   .nav__menu-btn { display: flex; }
 }
 @media (min-width: 980px) {
