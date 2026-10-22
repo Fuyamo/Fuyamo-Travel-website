@@ -47,13 +47,15 @@ window.FUYAMO_RENDER = (function (C) {
   // A photo with its smaller copies (C.SRCSET, made by the build), so the browser picks the size that fits: full width
   // for headers, about a third of a computer screen or half a phone screen for the rest. AVIF copies go in a <picture>
   // (browsers without AVIF get the original); JPEG copies go straight on the <img>.
-  function photoTag(src, attrs, hero) {
-    const s = C.SRCSET[src], sizes = hero ? '100vw' : '(max-width: 760px) 50vw, 33vw';
+  // A trip page's main gallery photo: nearly full width on phones, about a third of a computer screen.
+  const GALLERY_SIZES = '(max-width: 760px) 90vw, 33vw';
+  function photoTag(src, attrs, hero, sizes = hero ? '100vw' : '(max-width: 760px) 50vw, 33vw') {
+    const s = C.SRCSET[src];
     if (!s) return '<img src="' + esc(src) + '"' + attrs + '>';
     if (s.type === 'image/jpeg') return '<img src="' + esc(src) + '" srcset="' + esc(s.set) + '" sizes="' + sizes + '"' + attrs + '>';
     return '<picture><source type="' + s.type + '" srcset="' + esc(s.set) + '" sizes="' + sizes + '"><img src="' + esc(src) + '"' + attrs + '></picture>';
   }
-  const cover = (src, alt, hero) => (src ? photoTag(src, ' class="cover" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"'), hero) : '');
+  const cover = (src, alt, hero, sizes) => (src ? photoTag(src, ' class="cover" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"'), hero, sizes) : '');
   // Dates like "16–18 Jul 2027" would otherwise break after the dash in narrow cards.
   const keepTogether = (text) => '<span class="nowrap">' + esc(text) + '</span>';
   const inlinePhoto = (src) => (src ? '<span class="inline-photo">' + cover(src) + '</span>' : '');
@@ -635,7 +637,7 @@ window.FUYAMO_RENDER = (function (C) {
           <h1 class="trip__title">${esc(t.name)}</h1>
           <span class="trip__sub">${pin(10)}${esc(t.subtitle)}</span>
           <div class="gallery">
-            <div class="media gallery__main">${cover(t.hero, t.fullName + ' group trip', true)}</div>
+            <div class="media gallery__main">${cover(t.hero, t.fullName + ' group trip', true, GALLERY_SIZES)}</div>
             ${each(t.photos, (src, i) => `<div class="media gallery__item">${cover(src, t.fullName + ' trip photo ' + (i + 1))}</div>`)}
           </div>
           <p class="trip__blurb">${esc(t.blurb)}</p>
@@ -1149,7 +1151,7 @@ window.FUYAMO_RENDER = (function (C) {
 
   return {
     C, TRIPS, DEPARTURES, ACTIVE_MONTHS, SEASON, STYLES, MONTHS, WA,
-    esc, link, wa, formatDate, findTrip, findPost, yamoLink, navSection,
+    GALLERY_SIZES, esc, link, wa, formatDate, findTrip, findPost, yamoLink, navSection,
     nav, footer, page, megaColumns, bentoItems, tripResults, departingCards, departingKey,
     defaultQuote, quoteMessage, quoteEmail, quoteSubmission, QUOTE_NOTES, primaryContact,
     matchTrips, findOptions, callbackPanel, birthdayPopup, monthTrips, shareText,

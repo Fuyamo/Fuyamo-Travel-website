@@ -212,7 +212,7 @@ function publishVideo(siteDir, src, rel) {
     const tmp = dest + '.still';
     sh(`rm -rf ${q(tmp)} && mkdir -p ${q(tmp)} && qlmanage -t -s 900 -o ${q(tmp)} ${q(dest)} >/dev/null 2>&1; true`);
     const png = tmp + '/' + dest.split('/').pop() + '.png';
-    if (exists(png)) saveJpeg(png, still, 900, 0.78);
+    if (exists(png)) saveJpeg(png, still, 640, 0.62); // polaroid-sized
     sh(`rm -rf ${q(tmp)}`);
   }
   return { video: out, poster: exists(still) ? poster : '' };
@@ -415,6 +415,16 @@ function analyticsScript(id, siteUrl) {
     + `addEventListener('load',function(){setTimeout(ga,3000)})}</script>`;
 }
 
+// The page's main photo (its header, a trip's cover, an article's photo) is asked for straight away, at the size
+// that fits, rather than once the browser reaches it in the page.
+const HERO_PAGES = ['home', 'trips', 'calendar', 'services', 'about', 'book', 'contact', 'corporate', 'trip', 'post'];
+function lcpPreload(p, R) {
+  if (!p.image || !HERO_PAGES.includes(p.page)) return '';
+  const s = R.C.SRCSET[p.image], sizes = p.page === 'trip' ? R.GALLERY_SIZES : '100vw';
+  if (!s) return `<link rel="preload" as="image" href="${esc(p.image)}" fetchpriority="high">\n`;
+  return `<link rel="preload" as="image"${s.type === 'image/avif' ? ' type="image/avif"' : ''} imagesrcset="${esc(s.set)}" imagesizes="${sizes}" fetchpriority="high">\n`;
+}
+
 function pageHtml(p, R, versions, siteUrl, today) {
   const C = R.C;
   const depth = p.path.split('/').filter(Boolean).length;
@@ -453,7 +463,7 @@ ${siteUrl && indexable ? `<meta property="og:url" content="${esc(pageUrl)}">\n` 
 <link rel="icon" href="assets/brand/fuyamo-travel-icon-tile-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/brand/fuyamo-travel-icon-tile-256.png">
 <link rel="preload" as="font" type="font/woff2" href="assets/fonts/outfit-latin.woff2" crossorigin>
-<link rel="stylesheet" href="css/styles.css?v=${versions['css/styles.css']}">
+${lcpPreload(p, R)}<style>${versions.css}</style>
 ${SCRIPTS.map((s) => `<script src="${s}?v=${versions[s]}" defer></script>`).join('\n')}
 ${siteUrl && indexable ? `<script type="application/ld+json">${structuredData(p, R, siteUrl)}</script>\n` : ''}</head>
 <body data-page="${p.page}"${p.param ? ` data-param="${esc(p.param)}"` : ''} data-prerendered="true">
@@ -516,6 +526,10 @@ function run(argv) {
   // Content hashes make browsers fetch fresh CSS/JS after a change, and keep their cache otherwise.
   const versions = {};
   ['css/styles.css'].concat(SCRIPTS).forEach((f) => { versions[f] = sh('md5 -q ' + q(SITE_DIR + '/' + f)).slice(0, 8); });
+  // The stylesheet goes inside each page (comments and extra spaces taken out), so a phone can draw the page without
+  // waiting for a second download first. Its font addresses become relative to the site root.
+  versions.css = read(SITE_DIR + '/css/styles.css').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s+/g, ' ')
+    .replace(/\s*([{};])\s*/g, '$1').replace(/;}/g, '}').replace(/url\(\.\.\//g, 'url(').replace(/<\/style/gi, '<\\/style').trim();
 
   let images = 0;
   pages.forEach((p) => {

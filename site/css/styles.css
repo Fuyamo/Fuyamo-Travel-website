@@ -344,10 +344,10 @@ picture { display: contents; } /* a photo's smaller copies wrap it; it still lay
 .review__rating { display: flex; align-items: center; gap: 8px; }
 .review__stars { font: 400 15px/1 var(--sans); color: #FBBC05; letter-spacing: .04em; }
 .review__stars--empty { color: #D9D5CC; margin-left: -6px; }
-.review__trip { font: 500 11px var(--mono); letter-spacing: .08em; color: #7A756C; margin-left: auto; }
+.review__trip { font: 500 11px var(--mono); letter-spacing: .08em; color: #615C55; margin-left: auto; }
 .review__text { margin: 0; font: 400 14.5px/1.5 var(--sans); color: #2A2722; text-wrap: pretty; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .review.is-open .review__text { -webkit-line-clamp: unset; }
-.review__more { font: 500 13px/1 var(--sans); color: #7A756C; margin-top: auto; }
+.review__more { font: 500 13px/1 var(--sans); color: #615C55; margin-top: auto; }
 .review__more:hover { color: var(--ink); }
 
 /* ---------- Home: moments ---------- */
