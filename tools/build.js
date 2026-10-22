@@ -401,13 +401,18 @@ const SEAT_TEST_SCRIPT = "<script>(function(){var v='0';try{v=localStorage.getIt
   + "document.documentElement.setAttribute('data-ab',v)})();</script>";
 
 // Google Analytics 4. gtag() is defined on every page so app.js can record events, but the tracker itself only
-// loads on the live domain, so previews and local copies never count as visits.
+// loads on the live domain, so previews and local copies never count as visits. Its script (the page's biggest) waits
+// until the visitor scrolls, taps or types, or 3 seconds after the page has loaded, so it doesn't slow the first view;
+// the visit and any events before then are queued and sent when it arrives.
 function analyticsScript(id, siteUrl) {
   const host = siteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
   return '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}'
-    + `if(location.hostname.replace(/^www\\./,'')==='${host}'){var s=document.createElement('script');s.async=true;`
-    + `s.src='https://www.googletagmanager.com/gtag/js?id=${id}';document.head.appendChild(s);`
-    + `gtag('js',new Date());gtag('config','${id}',{allow_google_signals:false,allow_ad_personalization_signals:false})}</script>`;
+    + `if(location.hostname.replace(/^www\\./,'')==='${host}'){`
+    + `gtag('js',new Date());gtag('config','${id}',{allow_google_signals:false,allow_ad_personalization_signals:false});`
+    + `var ga=function(){if(ga.on)return;ga.on=1;var s=document.createElement('script');s.async=true;`
+    + `s.src='https://www.googletagmanager.com/gtag/js?id=${id}';document.head.appendChild(s)};`
+    + `['scroll','pointerdown','keydown','touchstart'].forEach(function(e){addEventListener(e,ga,{once:true,passive:true})});`
+    + `addEventListener('load',function(){setTimeout(ga,3000)})}</script>`;
 }
 
 function pageHtml(p, R, versions, siteUrl, today) {
