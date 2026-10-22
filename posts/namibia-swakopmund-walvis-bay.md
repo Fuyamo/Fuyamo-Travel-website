@@ -1,8 +1,8 @@
 ---
 title: "Namibia from South Africa: Swakopmund, Walvis Bay and Windhoek"
-category: Destination guides
+category: "Destination guides"
 date: 2026-10-21
-image: ""
+image: "/photos/trips/namibia/4.webp"
 intro: "A Namibia trip from South Africa: Windhoek, Swakopmund and Walvis Bay, Dune 7, Cape Cross seals and flamingos, plus visas, May weather, money and packing."
 ---
 
