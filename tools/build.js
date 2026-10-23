@@ -219,17 +219,10 @@ function publishVideo(siteDir, src, rel) {
 }
 
 // Smaller copies of a published photo, by width, so a phone downloads a size that fits the screen instead of the
-// full photo. They're AVIF where this Mac can write it (often a quarter of the JPEG's size; the page offers the
-// original to browsers without AVIF), JPEG otherwise. Returns { type, set: "a-480.avif 480w, …", files }.
+// full photo. They're JPEG. AVIF would be smaller, but Firefox (128 and others) can't open many of the AVIFs macOS
+// writes (tiled ones above 512px, and more), and showed empty photo frames. Returns { type, set: "a-480.jpg 480w, …", files }.
 const PHOTO_WIDTHS = [480, 960, 1600];
-const AVIF = (() => {
-  try {
-    ObjC.import('ImageIO');
-    const types = ObjC.castRefToObject($.CGImageDestinationCopyTypeIdentifiers());
-    for (let i = 0; i < types.count; i++) if (ObjC.unwrap(types.objectAtIndex(i)) === 'public.avif') return true;
-  } catch (err) { /* no ImageIO list: use JPEG */ }
-  return false;
-})();
+const AVIF = false;
 function publishSizes(siteDir, out, quality) {
   const [w, h] = sh(`sips -g pixelWidth -g pixelHeight ${q(siteDir + '/' + out)} | awk '/pixel/ {print $2}'`).split(/\s+/).map(Number);
   const ext = AVIF ? 'avif' : 'jpg', files = [], set = [];
