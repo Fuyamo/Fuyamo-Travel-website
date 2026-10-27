@@ -346,6 +346,7 @@ function structuredData(p, R, siteUrl) {
   };
   if (A) {
     agency.address = { '@type': 'PostalAddress', streetAddress: A.street + ', ' + A.area, addressLocality: A.city, addressRegion: A.region, postalCode: A.postcode, addressCountry: A.country };
+    agency.hasMap = A.map; // the Google Business Profile, so Google ties the site and the listing together
   }
   const ref = { '@id': agency['@id'] };
   const crumbs = (items) => ({
@@ -393,19 +394,39 @@ const SEAT_TEST_SCRIPT = "<script>(function(){var v='0';try{v=localStorage.getIt
   + "if(v!=='0'&&v!=='1'){v=Math.random()<.5?'0':'1';localStorage.setItem('fuyamo-seat-button',v)}}catch(e){v='0'}"
   + "document.documentElement.setAttribute('data-ab',v)})();</script>";
 
-// Google Analytics 4. gtag() is defined on every page so app.js can record events, but the tracker itself only
-// loads on the live domain, so previews and local copies never count as visits. Its script (the page's biggest) waits
-// until the visitor scrolls, taps or types, or 3 seconds after the page has loaded, so it doesn't slow the first view;
-// the visit and any events before then are queued and sent when it arrives.
-function analyticsScript(id, siteUrl) {
+// Google Analytics 4 and the advertising tags (Google Ads, Meta pixel, TikTok pixel), each only when its ID is set in
+// SITE.analytics. gtag(), fbq() and ttq are defined on every page so app.js can record events, but the trackers
+// themselves only load on the live domain, so previews and local copies never count as visits. Their scripts (the
+// page's biggest) wait until the visitor scrolls, taps or types, or 3 seconds after the page has loaded, so they don't
+// slow the first view; the visit and any events before then are queued and sent when they arrive.
+const TIKTOK_PIXEL = 'https://analytics.tiktok.com/i18n/pixel/events.js';
+function analyticsScript(A, siteUrl) {
   const host = siteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+  const ga4 = /^G-[A-Z0-9]+$/.test(A.ga4 || '') && A.ga4, ads = /^AW-\d+$/.test(A.googleAds || '') && A.googleAds;
+  const meta = /^\d{6,20}$/.test(A.metaPixel || '') && A.metaPixel, tiktok = /^[A-Z0-9]{8,32}$/.test(A.tiktokPixel || '') && A.tiktokPixel;
+  const tag = ga4 || ads;
+  if (!tag && !meta && !tiktok) return '';
   return '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}'
     + `if(location.hostname.replace(/^www\\./,'')==='${host}'){`
-    + `gtag('js',new Date());gtag('config','${id}',{allow_google_signals:false,allow_ad_personalization_signals:false});`
-    + `var ga=function(){if(ga.on)return;ga.on=1;var s=document.createElement('script');s.async=true;`
-    + `s.src='https://www.googletagmanager.com/gtag/js?id=${id}';document.head.appendChild(s)};`
-    + `['scroll','pointerdown','keydown','touchstart'].forEach(function(e){addEventListener(e,ga,{once:true,passive:true})});`
-    + `addEventListener('load',function(){setTimeout(ga,3000)})}</script>`;
+    + (tag ? `gtag('js',new Date());` : '')
+    + (ga4 ? `gtag('config','${ga4}',{allow_google_signals:false,allow_ad_personalization_signals:false});` : '')
+    + (ads ? `gtag('config','${ads}');` : '')
+    // Meta's own snippet, minus loading fbevents.js, which happens below.
+    + (meta ? `var fb=window.fbq=function(){fb.callMethod?fb.callMethod.apply(fb,arguments):fb.queue.push(arguments)};`
+      + `window._fbq=fb;fb.push=fb;fb.loaded=!0;fb.version='2.0';fb.queue=[];fbq('init','${meta}');fbq('track','PageView');` : '')
+    // TikTok's own snippet, with ttq.load() split in two: its bookkeeping now, its script below.
+    + (tiktok ? `var tt=window.ttq=window.ttq||[];window.TiktokAnalyticsObject='ttq';`
+      + `tt.methods=['page','track','identify','instances','debug','on','off','once','ready','alias','group','enableCookie','disableCookie','holdConsent','revokeConsent','grantConsent'];`
+      + `tt.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};`
+      + `for(var i=0;i<tt.methods.length;i++)tt.setAndDefer(tt,tt.methods[i]);`
+      + `tt.instance=function(t){for(var e=tt._i[t]||[],n=0;n<tt.methods.length;n++)tt.setAndDefer(e,tt.methods[n]);return e};`
+      + `tt._i={'${tiktok}':[]};tt._i['${tiktok}']._u='${TIKTOK_PIXEL}';tt._t={'${tiktok}':+new Date};tt._o={'${tiktok}':{}};ttq.page();` : '')
+    + `var load=function(){if(load.on)return;load.on=1;var add=function(u){var s=document.createElement('script');s.async=true;s.src=u;document.head.appendChild(s)};`
+    + (tag ? `add('https://www.googletagmanager.com/gtag/js?id=${tag}');` : '')
+    + (meta ? `add('https://connect.facebook.net/en_US/fbevents.js');` : '')
+    + (tiktok ? `add('${TIKTOK_PIXEL}?sdkid=${tiktok}&lib=ttq');` : '')
+    + `};['scroll','pointerdown','keydown','touchstart'].forEach(function(e){addEventListener(e,load,{once:true,passive:true})});`
+    + `addEventListener('load',function(){setTimeout(load,3000)})}</script>`;
 }
 
 // The page's main photo (its header, a trip's cover, an article's photo) is asked for straight away, at the size
@@ -430,9 +451,9 @@ function pageHtml(p, R, versions, siteUrl, today) {
   const indexable = p.page !== 'notfound';
   const solidNav = ['talk', 'notfound', 'yamo', 'privacy'].includes(R.navSection(p.page)); // pages without a dark photo behind the nav
   const contact = R.primaryContact(p.page);
-  const ga4 = C.SITE.analytics && C.SITE.analytics.ga4;
+  const tracking = C.SITE.analytics && siteUrl ? analyticsScript(C.SITE.analytics, siteUrl) : '';
   const head = (p.page === 'trip' && C.SITE.seatButton.length > 1 ? SEAT_TEST_SCRIPT + '\n' : '')
-    + (ga4 && /^G-[A-Z0-9]+$/.test(ga4) && siteUrl ? analyticsScript(ga4, siteUrl) + '\n' : '');
+    + (tracking ? tracking + '\n' : '');
   return `<!DOCTYPE html>
 <!-- Generated by tools/build.js. Edit site/js/content.js or posts/, then run build.command. -->
 <html lang="en-ZA">
@@ -546,6 +567,10 @@ function run(argv) {
   const ga4 = C.SITE.analytics && C.SITE.analytics.ga4;
   if (ga4 && !/^G-[A-Z0-9]+$/.test(ga4)) notes.push(`analytics.ga4 in content.js should look like G-ABC123XYZ (it's "${ga4}"). Analytics is off until it's fixed.`);
   if (!ga4 && C.SITE.seatButton.length > 1) notes.push('The seat button test is running but analytics.ga4 in content.js is empty, so clicks aren\'t being counted yet.');
+  [['googleAds', /^AW-\d+$/, 'AW-123456789'], ['metaPixel', /^\d{6,20}$/, '1234567890123456'], ['tiktokPixel', /^[A-Z0-9]{8,32}$/, 'C1A2B3C4D5E6F7G8H9I0']].forEach(([key, shape, example]) => {
+    const id = C.SITE.analytics && C.SITE.analytics[key];
+    if (id && !shape.test(id)) notes.push(`analytics.${key} in content.js should look like ${example} (it's "${id}"). That tag is off until it's fixed.`);
+  });
   if (siteUrl) {
     write(SITE_DIR + '/sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
       + pages.map((p) => `  <url><loc>${esc(siteUrl + '/' + p.path)}</loc>${p.lastmod ? `<lastmod>${p.lastmod}</lastmod>` : ''}</url>\n`).join('') + '</urlset>\n');

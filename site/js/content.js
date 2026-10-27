@@ -43,7 +43,10 @@ window.FUYAMO = (function () {
     // so Google Analytics shows which label gets more clicks (README, "Button test"). Keep one label to end the test.
     seatButton: ['Reserve seat', 'Secure seat'],
     // Google Analytics 4 measurement ID ("G-…"). Empty: no analytics. It only runs on the live domain, not previews.
-    analytics: { ga4: 'G-S6MT5HXJXG' },
+    // The advertising tags work the same way, each switched on by its ID: Google Ads ("AW-…"), the Meta pixel (a
+    // number from Events Manager) and the TikTok pixel (letters and numbers from TikTok Ads Manager). The privacy
+    // notice names the ones that are on.
+    analytics: { ga4: 'G-S6MT5HXJXG', googleAds: '', metaPixel: '', tiktokPixel: '' },
 
     social: [
       { name: 'Instagram', handle: '@travelwithfuyamo', url: 'https://www.instagram.com/travelwithfuyamo/' },
@@ -238,6 +241,11 @@ window.FUYAMO = (function () {
   // The privacy notice (footer link). Each section: [heading, [paragraphs]]; a list inside the paragraphs becomes
   // bullet points, and [text](address) becomes a link. Change `updated` whenever the wording changes.
   const A = SITE.address;
+  // The advertising tags that are switched on (SITE.analytics), so the notice names exactly the ones in use.
+  const AD_TAGS = [['metaPixel', 'Meta (Facebook and Instagram)'], ['tiktokPixel', 'TikTok'], ['googleAds', 'Google Ads']]
+    .filter(([key]) => SITE.analytics[key]).map(([, name]) => name);
+  const andList = (items) => items.length > 1 ? items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1] : items.join('');
+  const ADS = andList(AD_TAGS);
   const PRIVACY = {
     updated: '2026-10-20',
     intro: 'This notice explains what personal information Fuyamo Travel collects through this website and when you book with us, why we need it, and your rights under the Protection of Personal Information Act (POPIA).',
@@ -250,7 +258,7 @@ window.FUYAMO = (function () {
         'Enquiries: your name, WhatsApp number or email address, company, destination, travel dates and anything you write to us.',
         'The birthday offer: your name, WhatsApp number and birthday month.',
         'Bookings: what airlines, hotels and other suppliers need, such as your name as it appears in your passport, ID or passport number, date of birth and contact details, plus dietary or medical needs you tell us about. For family trips, a parent or guardian gives us their children’s details.',
-        'Website use: the pages you visit, the buttons you click, your device, browser and approximate location, through Google Analytics.',
+        `Website use: the pages you visit, the buttons you click, your device, browser and approximate location, through Google Analytics${ADS ? ` and the advertising tags of ${ADS}` : ''}.`,
       ],
       'This website doesn’t take card payments. Deposits and instalments paid in the Yamo app are handled by Yamo, and EFT payments go straight to our bank.',
       ]],
@@ -259,6 +267,7 @@ window.FUYAMO = (function () {
         'To book and manage your trip with our suppliers, and to support you while you travel.',
         'To send you the birthday offer and other trip news you signed up for. You can opt out at any time.',
         'To understand how people use this website and improve it.',
+        ...(ADS ? ['To show our trips to people who are likely to be interested, and to see which adverts lead to enquiries.'] : []),
         'To meet our legal, tax and accounting duties.',
       ]]],
       ['Who we share it with', [[
@@ -266,6 +275,7 @@ window.FUYAMO = (function () {
         'Yamo, which we use to plan tailored trips and send proposals, and when you reserve or pay in the Yamo app. Yamo’s own privacy policy applies there.',
         'Google, which stores the messages from this website’s forms in our Google Workspace account and provides Google Analytics.',
         'Plunk, which sends our emails about your enquiry and, if you ask for them, trip news. Every trip news email has an unsubscribe link.',
+        ...(ADS ? [`${ADS}, which learn which pages you visit on this website and whether you send us an enquiry, so we can measure our adverts and show them to the right people. Their own privacy policies apply.`] : []),
       ],
       'We never sell your personal information.',
       ]],
@@ -273,7 +283,9 @@ window.FUYAMO = (function () {
         'Some of these services, including Google and Plunk, store information outside South Africa, and international trips mean sharing your details with suppliers abroad. We only do this with services that protect personal information to a standard similar to POPIA, or when it’s needed for the trip you booked.',
       ]],
       ['Cookies', [
-        'Google Analytics uses cookies (named _ga) to count visits and see which pages and buttons are used. This website also saves two small settings in your browser: whether you closed the birthday offer, and which wording of the booking button you see. We don’t use advertising cookies. You can clear or block cookies in your browser’s settings.',
+        `Google Analytics uses cookies (named _ga) to count visits and see which pages and buttons are used. This website also saves two small settings in your browser: whether you closed the birthday offer, and which wording of the booking button you see. ${ADS
+          ? `Our advertising partners, ${ADS}, also set cookies, such as Meta’s _fbp and TikTok’s _ttp, to measure our adverts and show you our trips on their platforms. You can turn off personalised adverts in your Facebook, Instagram, TikTok and Google ad settings.`
+          : 'We don’t use advertising cookies.'} You can clear or block cookies in your browser’s settings.`,
       ]],
       ['How long we keep it', [
         'We keep enquiries for as long as we need them to help you, and no longer than two years. Booking and financial records are kept for five years, as the law requires. After that we delete them or remove anything that identifies you.',

@@ -591,6 +591,7 @@
     trip() {
       // One "seen" per trip page view, so each label's clicks can be compared with how often it was shown.
       track('seen_' + eventName(seatLabel()), { trip: state.trip.key });
+      adTrack('ViewContent', 'ViewContent', state.trip);
       const bar = document.getElementById('book-bar');
       new IntersectionObserver(([entry]) => bar.classList.toggle('is-hidden', entry.isIntersecting))
         .observe(document.querySelector('.booking__card'));
@@ -611,9 +612,23 @@
 
   // ---------- Seat button test & analytics ----------
 
-  // Sends an event to Google Analytics when it's set up (SITE.analytics.ga4); otherwise does nothing.
+  // Sends an event to Google Analytics when it's set up (SITE.analytics.ga4); otherwise does nothing. Enquiries and
+  // WhatsApp taps also go to the Meta and TikTok pixels, which is what their ads learn from.
   function track(name, params) {
     if (typeof window.gtag === 'function') window.gtag('event', name, Object.assign({ transport_type: 'beacon' }, params));
+    if (name === 'generate_lead') adTrack('Lead', 'SubmitForm');
+    if (name === 'click_whatsapp') adTrack('Contact', 'Contact');
+  }
+  // An event for the Meta pixel and the TikTok pixel (when they're set up), under each one's standard name, with the
+  // trip and its price when there is one.
+  function adTrack(meta, tiktok, trip) {
+    const value = trip && Number(trip.price.replace(/[^\d]/g, ''));
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', meta, trip ? { content_name: trip.fullName, content_ids: [trip.key], content_type: 'product', value, currency: 'ZAR' } : {});
+    }
+    if (window.ttq && typeof window.ttq.track === 'function') {
+      window.ttq.track(tiktok, trip ? { contents: [{ content_id: trip.key, content_name: trip.fullName }], content_type: 'product', value, currency: 'ZAR' } : {});
+    }
   }
   // The label this visitor sees ("Reserve seat" or "Secure seat"), and its event-name form ("reserve_seat").
   const seatLabel = () => C.SITE.seatButton[C.SITE.seatButton.length > 1 && document.documentElement.dataset.ab === '1' ? 1 : 0];
@@ -624,6 +639,7 @@
   function seatClick(link) {
     const label = seatLabel();
     track('click_' + eventName(label), { trip: state.trip.key, button: link.dataset.seat });
+    adTrack('InitiateCheckout', 'InitiateCheckout', state.trip);
     const url = new URL(link.href);
     url.searchParams.set('cta', eventName(label));
     link.href = url.href;
