@@ -506,10 +506,13 @@ function run(argv) {
       title: key === 'home' ? p.title : p.title + ' · Fuyamo Travel',
     };
   });
+  // Trip pages in Google: the searched-for words first ("Zanzibar Group Trip 2027 from Johannesburg"), and the price
+  // at the start of the description, which Google cuts off after about 155 characters.
+  const clip = (text, max) => (text.length <= max ? text : text.slice(0, text.lastIndexOf(' ', max - 1)).replace(/[\s,.;:–-]+$/, '') + '…');
   R.TRIPS.forEach((t) => pages.push({
     page: 'trip', param: t.key, path: t.href, share: 'trip-' + t.key, image: t.hero,
-    title: `${t.name}${t.edition ? ' ' + t.edition : ''} · ${t.dates[0].slice(-4)} group trip · Fuyamo Travel`,
-    description: `${t.blurb} ${t.nights}, from ${t.price} per person.`,
+    title: `${t.searchName || t.name + (t.edition ? ' ' + t.edition : '') + ' Group Trip'} ${t.dates[0].slice(-4)} from Johannesburg · Fuyamo Travel`,
+    description: clip(`${t.price} per person, ${t.nights.replace(' · ', ', ')} from Johannesburg. ${t.blurb}`, 155),
   }));
   posts.forEach((p) => pages.push({
     page: 'post', param: p.slug, path: C.PATHS.post(p.slug), share: 'post-' + p.slug, type: 'article', lastmod: p.updated || p.date,

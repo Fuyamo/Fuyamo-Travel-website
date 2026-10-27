@@ -114,6 +114,8 @@ window.FUYAMO = (function () {
     yamo: t.departures.map((d) => d.yamo || ''),
     included: t.included || [], optional: t.optional || [],
     cover: t.cover, gallery: t.gallery || [], hasPdf: !!t.has_pdf,
+    // How the trip is named in Google results, in the words people search with (e.g. "Victoria Falls, Zambia & Chobe Group Trip").
+    searchName: t.search_name || '',
   }));
 
   const WHY_ICONS = {

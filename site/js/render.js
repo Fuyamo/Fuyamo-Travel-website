@@ -619,8 +619,15 @@ window.FUYAMO_RENDER = (function (C) {
       </section>`;
   }
 
+  // Travel Talk articles about a trip: the ones that link to its page, the guides for this trip (linking to at most
+  // two trips) before the general ones (passport checklist and the like).
+  const tripsLinked = (p) => TRIPS.filter((x) => p.html.includes('href="' + x.href + '"')).length;
+  const tripGuides = (t) => C.POSTS.filter((p) => p.html.includes('href="' + t.href + '"') && p.slug !== 'deposits-instalments')
+    .sort((a, b) => (tripsLinked(a) > 2) - (tripsLinked(b) > 2)).slice(0, 3);
+
   function tripPage(key) {
     const t = findTrip(key);
+    const guides = tripGuides(t), instalments = findPost('deposits-instalments');
     const more = TRIPS.filter((x) => x.key !== t.key)
       .sort((a, b) => (b.type === t.type) - (a.type === t.type))
       .slice(0, 4);
@@ -657,7 +664,10 @@ window.FUYAMO_RENDER = (function (C) {
               <div class="step"><span class="step__n">01</span><span class="step__t">Pay ${esc(t.deposit)} pp</span><span class="step__d">${esc(B.accountName)} · ${esc(B.bank)}<br><b>${esc(B.accountNumber)}</b></span></div>
               <div class="step"><span class="step__n">02</span><span class="step__t">Reference</span><span class="step__d">Your name + “${esc(t.ref)}”</span></div>
               <div class="step"><span class="step__n">03</span><span class="step__t">Send proof</span><span class="step__d">${esc(SITE.email)} or WhatsApp ${esc(SITE.whatsappDisplay)}</span></div>
-            </div>`],
+            </div>
+            ${instalments ? `<a href="${PATHS.post(instalments.slug)}" class="guide-link">How deposits and instalments work<span aria-hidden="true">→</span></a>` : ''}`],
+          guides.length && ['guide', 'Travel guide', guides.length,
+            `<div class="guide-links">${each(guides, (p) => `<a href="${PATHS.post(p.slug)}" class="guide-link"><span><small>${esc(p.cat)} · ${esc(p.read)} read</small>${esc(p.title)}</span><span aria-hidden="true">→</span></a>`)}</div>`],
         ])}
         </div>
 

@@ -490,6 +490,13 @@ picture { display: contents; } /* a photo's smaller copies wrap it; it still lay
 .inc-item .pin { margin-top: 5px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { font: 400 13.5px/1 var(--sans); padding: 9px 13px; background: var(--paper); border-radius: 999px; }
+/* Travel Talk articles about the trip (and the instalments guide under How to reserve), as slim rows. */
+.guide-links { display: flex; flex-direction: column; border-top: 1px solid #E2DED6; }
+.guide-link { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid #E9E6E0; font: 500 15px/1.35 var(--sans); text-decoration: none; }
+.guide-link small { display: block; margin-bottom: 3px; font: 400 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: #615C55; }
+.guide-link > span[aria-hidden] { flex-shrink: 0; transition: transform .2s; }
+.guide-link:hover > span[aria-hidden] { transform: translateX(3px); }
+.tab-panel > .guide-link { align-self: flex-start; gap: 10px; padding: 4px 0; border: 0; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; }
 .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 16px; }
 .step { display: flex; flex-direction: column; gap: 6px; }
 .step__n { width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; display: flex; align-items: center; justify-content: center; font: 500 13px var(--mono); }

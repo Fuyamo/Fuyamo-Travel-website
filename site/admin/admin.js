@@ -966,7 +966,7 @@
   }
 
   const BLANK_TRIP = {
-    key: '', order: 10, name: '', edition: '', menu_label: '', place: '', subtitle: '', type: 'fly', family: false, nights: '', price: '',
+    key: '', order: 10, name: '', edition: '', menu_label: '', search_name: '', place: '', subtitle: '', type: 'fly', family: false, nights: '', price: '',
     prices: [], deposit: '', reference: '', blurb: '', departures: [{ dates: '', yamo: '' }], included: [''], optional: [], cover: '', gallery: ['', '', ''], hidden: false,
   };
   const pdfPath = (t) => `site/assets/trips/fuyamo-${String((t.departures[0] || {}).dates || '').slice(-4)}-${t.key}.pdf`;
@@ -1063,6 +1063,7 @@
               ${field('Order', `<input type="number" data-bind="order" value="${h(d.order)}" min="1">`, 'Position in trip lists (1 shows first).')}
             </div>
             ${field('Menu label', text('menu_label', d.menu_label, 'placeholder="Optional shorter name for menus"'))}
+            ${field('Name in Google', text('search_name', d.search_name || '', 'placeholder="e.g. Victoria Falls, Zambia & Chobe Group Trip"'), `Optional. The trip’s name in Google results, in the words people search with. Empty: “${h((d.name || 'Name') + (d.edition ? ' ' + d.edition : ''))} Group Trip”.`)}
           </section>
           ${savebar(original ? `<button class="btn btn-danger-text" data-act="delete">${icon('trash', 16)} Delete trip</button>` : '')}`, { back: '#/trips' });
       },
