@@ -46,7 +46,7 @@ window.FUYAMO = (function () {
     // The advertising tags work the same way, each switched on by its ID: Google Ads ("AW-…"), the Meta pixel (a
     // number from Events Manager) and the TikTok pixel (letters and numbers from TikTok Ads Manager). The privacy
     // notice names the ones that are on.
-    analytics: { ga4: 'G-S6MT5HXJXG', googleAds: '', metaPixel: '', tiktokPixel: '' },
+    analytics: { ga4: 'G-S6MT5HXJXG', googleAds: 'AW-18540064136', metaPixel: '2559104044515710', tiktokPixel: '' },
 
     social: [
       { name: 'Instagram', handle: '@travelwithfuyamo', url: 'https://www.instagram.com/travelwithfuyamo/' },
@@ -247,7 +247,7 @@ window.FUYAMO = (function () {
   const andList = (items) => items.length > 1 ? items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1] : items.join('');
   const ADS = andList(AD_TAGS);
   const PRIVACY = {
-    updated: '2026-10-20',
+    updated: '2026-10-27',
     intro: 'This notice explains what personal information Fuyamo Travel collects through this website and when you book with us, why we need it, and your rights under the Protection of Personal Information Act (POPIA).',
     sections: [
       ['Who we are', [
