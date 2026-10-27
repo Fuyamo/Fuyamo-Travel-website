@@ -56,7 +56,7 @@
     const active = R.navSection(page);
     const menuOpen = state.menu && narrowQuery.matches;
     navEl.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('is-active', a.dataset.nav === active || a.dataset.nav === state.mega));
-    // Travel Talk pages have no photo behind the nav, so it starts solid there.
+    // Blog pages have no photo behind the nav, so it starts solid there.
     navEl.classList.toggle('is-solid', state.scrolled || menuOpen || !!state.mega || active === 'talk' || ['notfound', 'yamo', 'privacy'].includes(page));
     document.getElementById('mobile-menu').hidden = !state.menu;
     const btn = navEl.querySelector('.nav__menu-btn');
@@ -166,6 +166,43 @@
     } finally {
       btn.disabled = false;
       label.textContent = 'Send enquiry';
+    }
+  }
+
+  // The contact page's message form, sent in the background like the enquiry form. The script files it as a callback
+  // request that asks for an email reply.
+  async function sendContact(e) {
+    e.preventDefault();
+    const form = e.currentTarget, btn = document.getElementById('contact-submit'), label = btn.querySelector('.send-btn__label');
+    const error = document.getElementById('contact-error'), done = document.getElementById('contact-done');
+    const name = form.elements.name.value.trim(), about = form.elements.About.value;
+    const data = {
+      _form: 'callback',
+      _subject: 'Contact form: ' + about + ' · ' + name,
+      name,
+      email: form.elements.email.value.trim(),
+      'Reply by': 'Email',
+      About: about,
+      Message: form.elements.Message.value.trim(),
+      'Asked from': document.title + ' · ' + window.location.href.split(/[?#]/)[0],
+      _honey: form.elements._honey.value,
+    };
+    error.hidden = true;
+    btn.disabled = true;
+    label.textContent = 'Sending…';
+    try {
+      await sendToInbox(data);
+      track('generate_lead', { form: 'contact', enquiry_type: about });
+      form.classList.add('is-sent');
+      document.getElementById('contact-done-title').textContent = 'Thanks, ' + name.split(' ')[0] + '.';
+      document.getElementById('contact-done-text').textContent = "We'll reply to " + data.email + ' within one working day.';
+      done.hidden = false;
+      done.focus({ preventScroll: true });
+    } catch (err) {
+      error.hidden = false;
+    } finally {
+      btn.disabled = false;
+      label.textContent = 'Send message';
     }
   }
 
@@ -564,6 +601,25 @@
     }
   }
 
+  // ---------- Home: scrolling statement ----------
+
+  // Lights the statement up word by word as the section scrolls by (see .intro in styles.css). --p runs from 0, when
+  // the text comes up from the bottom of the screen, to 1, just before it unpins and moves on.
+  function scrollIntro() {
+    const intro = document.querySelector('.intro');
+    if (!intro || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    intro.dataset.scroll = '';
+    let last = '';
+    const update = () => {
+      const box = intro.getBoundingClientRect(), screen = window.innerHeight;
+      const p = Math.min(1, Math.max(0, (screen * .25 - box.top) / (box.height - screen * .95))).toFixed(3);
+      if (p !== last) intro.style.setProperty('--p', last = p);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+  }
+
   const MOUNTS = {
     home() {
       // The pages are built ahead of time; refresh "Departing soon" if a departure has passed since.
@@ -573,13 +629,7 @@
         departing.innerHTML = R.departingCards(today);
         departing.dataset.key = R.departingKey(today);
       }
-      const intro = document.querySelector('.intro');
-      intro.dataset.reveal = '';
-      new IntersectionObserver(([entry], observer) => {
-        if (!entry.isIntersecting) return;
-        intro.classList.add('is-in');
-        observer.disconnect();
-      }, { threshold: 0.35 }).observe(intro);
+      scrollIntro();
       playMoments();
       driftMoments();
       setupSearch();
@@ -600,6 +650,9 @@
     corporate() {
       document.getElementById('quote-form').addEventListener('submit', sendQuote);
       if (new URLSearchParams(window.location.search).get('sent') === '1') showQuoteSent();
+    },
+    contact() {
+      document.getElementById('contact-form').addEventListener('submit', sendContact);
     },
     trips() {
       const query = new URLSearchParams(window.location.search);
@@ -791,6 +844,14 @@
       form.classList.remove('is-sent');
       document.getElementById('quote-done').hidden = true;
       form.querySelector('input[required]').focus();
+    },
+
+    'contact-reset'() {
+      const form = document.getElementById('contact-form');
+      form.reset();
+      form.classList.remove('is-sent');
+      document.getElementById('contact-done').hidden = true;
+      form.elements.name.focus();
     },
   };
 

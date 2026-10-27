@@ -4,7 +4,7 @@ category: Destination guides
 date: 2026-10-13
 updated: 2026-10-21
 image: detail-bali-1.webp
-intro: One or two sentences that sum up the article. They show on the Travel Talk page and in Google results.
+intro: One or two sentences that sum up the article. They show on the blog page and in Google results.
 ---
 
 ## A heading for the first section

@@ -1167,7 +1167,7 @@
               ${field('Category', `<select data-bind="category">${each(cats, (c) => `<option${c === d.category ? ' selected' : ''}>${h(c)}</option>`)}</select>`)}
               ${field('Date', `<input type="date" data-bind="date" value="${h(d.date)}">`, 'Newest articles show first.')}
             </div>
-            ${field('Intro', area('intro', d.intro, 2, 'placeholder="One or two sentences. Shown on Travel Talk and in Google results."'))}
+            ${field('Intro', area('intro', d.intro, 2, 'placeholder="One or two sentences. Shown on the blog and in Google results."'))}
             <div class="field"><span class="field__label">Photo</span><div class="slots slots--one">${slot('image', d.image, '', 'Article photo')}</div></div>
             ${original ? '' : field('Web address', text('slug', d.slug, `placeholder="${h(slugify(d.title) || 'e.g. what-to-pack-for-zanzibar')}"`), `fuyamo.co.za/travel-talk/<strong>${h(d.slug || slugify(d.title) || '…')}</strong>/ · Leave empty to use the title.`)}
           </section>
@@ -1237,14 +1237,14 @@
           // Reworking an article's words shows it as updated today (Google reads this as fresh content).
           if (original && ['title', 'intro', 'body'].some((k) => d[k] !== original[k])) d.updated = today();
           const content = postText(d);
-          if (await save([{ path: `posts/${d.slug}.md`, text: content }].concat(pendingFiles(content)), `Travel Talk: ${original ? 'update' : 'add'} “${d.title}”`, btn)) {
+          if (await save([{ path: `posts/${d.slug}.md`, text: content }].concat(pendingFiles(content)), `Blog: ${original ? 'update' : 'add'} “${d.title}”`, btn)) {
             S.posts = S.posts.filter((p) => p !== original).concat(clone(d)).sort((x, y) => (x.date < y.date ? 1 : -1));
             location.hash = '#/articles';
           }
         },
         async delete() {
-          if (!(await confirmBox('Delete this article?', `“${original.title}” disappears from Travel Talk. Earlier versions stay on GitHub if you need it back.`, { ok: 'Delete', danger: true }))) return;
-          if (await save([{ path: `posts/${original.slug}.md`, remove: true }], `Travel Talk: remove “${original.title}”`)) {
+          if (!(await confirmBox('Delete this article?', `“${original.title}” disappears from the blog. Earlier versions stay on GitHub if you need it back.`, { ok: 'Delete', danger: true }))) return;
+          if (await save([{ path: `posts/${original.slug}.md`, remove: true }], `Blog: remove “${original.title}”`)) {
             S.posts = S.posts.filter((p) => p !== original);
             location.hash = '#/articles';
           }
@@ -1256,7 +1256,7 @@
 
   // ----- Photos -----
 
-  // The pages that show a header photo (Travel Talk and Yamo have their own designs; their link previews use the home photo).
+  // The pages that show a header photo (the blog and Yamo have their own designs; their link previews use the home photo).
   const HEADER_SLOTS = [['home', 'Home'], ['trips', 'Group trips'], ['calendar', 'Calendar'], ['services', 'Services'], ['about', 'About'], ['how_to_book', 'How to book'], ['corporate', 'Corporate'], ['contact', 'Contact']];
   const LIST_SLOTS = [
     ['intro', 'Intro photo pills', 'The three small round photos in “We plan the flights, the stays…”.', 3, 'pill'],
@@ -1483,7 +1483,7 @@
     let m;
     if ((m = path.match(/^\/trips\/([\w-]+)\/?$/)) && S.trips) { const t = S.trips.find((x) => x.key === m[1]); if (t) return t.name + (t.edition ? ' · ' + t.edition : '') + ' (trip)'; }
     if ((m = path.match(/^\/travel-talk\/([\w-]+)\/?$/)) && S.posts) { const p = S.posts.find((x) => x.slug === m[1]); if (p) return p.title; }
-    const names = { '/trips/': 'All trips', '/calendar/': 'Calendar', '/how-to-book/': 'How to book', '/corporate/': 'Corporate', '/contact/': 'Contact', '/about/': 'About', '/services/': 'Services', '/travel-talk/': 'Travel Talk', '/yamo/': 'Yamo', '/privacy/': 'Privacy notice' };
+    const names = { '/trips/': 'All trips', '/calendar/': 'Calendar', '/how-to-book/': 'How to book', '/corporate/': 'Corporate', '/contact/': 'Contact', '/about/': 'About', '/services/': 'Services', '/travel-talk/': 'Blog', '/yamo/': 'Yamo', '/privacy/': 'Privacy notice' };
     return names[path] || path;
   }
 

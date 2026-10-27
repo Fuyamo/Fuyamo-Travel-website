@@ -3,7 +3,7 @@
 
    Reads posts/*.md, content/ (both edited in the admin at /admin), photos/ and site/js/content.js, then writes
    inside site/:
-   - js/posts.js: the Travel Talk articles, converted from Markdown
+   - js/posts.js: the blog articles, converted from Markdown
    - js/data.js: trips, FAQs, reviews and the chosen photos from content/, which content.js reads
    - assets/img/: those photos, upright and web-sized
    - one index.html per page (home, trips/, trips/<key>/, travel-talk/<slug>/, …) with the page's full
@@ -56,7 +56,7 @@ function coverImage(src, dest, width, height, quality) {
   return true;
 }
 
-// ---------- Travel Talk posts (Markdown) ----------
+// ---------- Blog posts (Markdown) ----------
 
 // **bold**, *italic* or _italic_, and [links](address). Site links can be written as /trips/bali/.
 function inline(text) {
@@ -134,7 +134,7 @@ function readPosts(root, photo, notes) {
     meta.updated = String(meta.updated || '').slice(0, 10);
     if (meta.updated && !/^\d{4}-\d{2}-\d{2}$/.test(meta.updated)) throw new Error(`posts/${file}: write updated as YYYY-MM-DD, e.g. 2026-10-21`);
     if (meta.updated <= meta.date) meta.updated = '';
-    const where = 'Travel Talk → ' + meta.title;
+    const where = 'Blog → ' + meta.title;
     // Photos chosen in the admin live in photos/ and are published like the rest; older articles name a file in
     // site/assets/photos/.
     let img = '';
@@ -374,13 +374,13 @@ function structuredData(p, R, siteUrl) {
   if (p.page === 'book') {
     graph.push({ '@type': 'FAQPage', mainEntity: C.FAQS.map(([question, answer]) => ({ '@type': 'Question', name: question, acceptedAnswer: { '@type': 'Answer', text: answer } })) });
   }
-  if (p.page === 'talk') graph.push({ '@type': 'Blog', name: 'Travel Talk by Fuyamo Travel', url: abs(p.path), publisher: ref, inLanguage: 'en-ZA' });
+  if (p.page === 'talk') graph.push({ '@type': 'Blog', name: 'Fuyamo Travel blog', url: abs(p.path), publisher: ref, inLanguage: 'en-ZA' });
   if (p.page === 'post') {
     const post = R.findPost(p.param);
     graph.push({
       '@type': 'BlogPosting', headline: post.title, description: post.intro, image: abs('assets/share/' + p.share + '.jpg'), articleSection: post.cat,
       datePublished: post.date, dateModified: post.updated || post.date, author: ref, publisher: ref, mainEntityOfPage: abs(p.path), inLanguage: 'en-ZA',
-    }, crumbs([['Home', ''], ['Travel Talk', C.PAGES.talk.path], [post.title, p.path]]));
+    }, crumbs([['Home', ''], ['Blog', C.PAGES.talk.path], [post.title, p.path]]));
   }
   // "<" is escaped so text can never close the script tag early.
   return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c');

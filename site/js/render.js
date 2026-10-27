@@ -60,7 +60,7 @@ window.FUYAMO_RENDER = (function (C) {
   const cover = (src, alt, hero, sizes) => (src ? photoTag(src, ' class="cover" alt="' + esc(alt || '') + '"' + (hero ? ' fetchpriority="high"' : ' loading="lazy"'), hero, sizes) : '');
   // Dates like "16–18 Jul 2027" would otherwise break after the dash in narrow cards.
   const keepTogether = (text) => '<span class="nowrap">' + esc(text) + '</span>';
-  const inlinePhoto = (src) => (src ? '<span class="inline-photo">' + cover(src) + '</span>' : '');
+  const inlinePhoto = (src, attrs = '') => (src ? '<span class="inline-photo"' + attrs + '>' + cover(src) + '</span>' : '');
   const icon = (paths, size, stroke) =>
     '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + stroke + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
 
@@ -137,11 +137,11 @@ window.FUYAMO_RENDER = (function (C) {
     talk: [
       ['TOPICS', [...new Set(C.POSTS.map((p) => p.cat))].map((cat) => [cat, TALK_URL])],
       ['LATEST', C.POSTS.slice(0, 3).map((p) => [p.title, PATHS.post(p.slug)])],
-      ['TRAVEL TALK', [['All posts', TALK_URL]]],
+      ['BLOG', [['All posts', TALK_URL]]],
     ],
   };
   // About us is in the footer only.
-  const NAV = [['Group Trips', 'trips'], ['Services', 'services'], ['Corporate Travel', 'corporate'], ['Travel Talk', 'talk'], ['Contact', 'contact']];
+  const NAV = [['Group Trips', 'trips'], ['Services', 'services'], ['Corporate Travel', 'corporate'], ['Blog', 'talk'], ['Contact', 'contact']];
   const NAV_ALIAS = { trip: 'trips', calendar: 'trips', book: 'trips', post: 'talk' };
   const navSection = (page) => NAV_ALIAS[page] || page;
 
@@ -188,7 +188,7 @@ window.FUYAMO_RENDER = (function (C) {
             </div>
             <div class="footer__col">
               <span>COMPANY</span>
-              <a href="${link('yamo')}">Yamo</a><a href="${link('about')}">About us</a><a href="${link('book')}#faqs">FAQs</a><a href="${link('talk')}">Travel Talk</a>
+              <a href="${link('yamo')}">Yamo</a><a href="${link('about')}">About us</a><a href="${link('book')}#faqs">FAQs</a><a href="${link('talk')}">Blog</a>
             </div>
             <div class="footer__col footer__col--contact">
               <span>CONTACT</span>
@@ -501,6 +501,17 @@ window.FUYAMO_RENDER = (function (C) {
     });
   }
 
+  // The home statement with its words (and photos) numbered, so app.js can light them up in turn as the section
+  // scrolls by; without it the whole line shows. Words joined by &nbsp; light up together and stay on one line.
+  function introStatement() {
+    let n = 0;
+    const words = (text) => text.split(' ').map((w) => `<span class="intro__w" style="--i:${n++}">${w}</span>`).join(' ');
+    const photo = (src) => (src ? inlinePhoto(src, ` style="--i:${n++}"`) : '');
+    const html = `${words('We plan the flights,')} ${photo(PHOTO.intro[0])} ${words('the&nbsp;stays')} ${photo(PHOTO.intro[1])} ${words('and the good&nbsp;stuff,')} `
+      + `<span class="intro__keep">${words('so you just')} ${photo(PHOTO.intro[2])} ${words('show&nbsp;up.')}</span>`;
+    return `<p class="intro__statement" style="--n:${n}">${html}</p>`;
+  }
+
   function homePage(param, today) {
     const monthYear = (i) => MONTHS_FULL[i] + ' ' + DEPARTURES.find((d) => d.month === i).start.getFullYear();
 
@@ -522,7 +533,7 @@ window.FUYAMO_RENDER = (function (C) {
       </section>
 
       <section class="intro">
-        <p class="intro__statement">We plan the flights, ${inlinePhoto(PHOTO.intro[0])} the&nbsp;stays ${inlinePhoto(PHOTO.intro[1])} and the good&nbsp;stuff, <span class="intro__keep">so you just ${inlinePhoto(PHOTO.intro[2])} show&nbsp;up.</span></p>
+        <div class="intro__pin">${introStatement()}</div>
       </section>
 
       <section class="wrap departing">
@@ -619,7 +630,7 @@ window.FUYAMO_RENDER = (function (C) {
       </section>`;
   }
 
-  // Travel Talk articles about a trip: the ones that link to its page, the guides for this trip (linking to at most
+  // Blog articles about a trip: the ones that link to its page, the guides for this trip (linking to at most
   // two trips) before the general ones (passport checklist and the like).
   const tripsLinked = (p) => TRIPS.filter((x) => p.html.includes('href="' + x.href + '"')).length;
   const tripGuides = (t) => C.POSTS.filter((p) => p.html.includes('href="' + t.href + '"') && p.slug !== 'deposits-instalments')
@@ -957,12 +968,12 @@ window.FUYAMO_RENDER = (function (C) {
       </section>`;
   }
 
-  // ---------- Travel Talk ----------
+  // ---------- Blog ----------
 
   function talkPage() {
     return `
       <section class="wrap talk-head">
-        <div class="stack gap-16"><div class="eyebrow">TRAVEL TALK</div><h1 class="page-hero__title">Tips, guides<br>&amp; trip stories.</h1></div>
+        <div class="stack gap-16"><div class="eyebrow">BLOG</div><h1 class="page-hero__title">Tips, guides<br>&amp; trip stories.</h1></div>
       </section>
       <section class="wrap posts">${each(C.POSTS, (p) => `
         <a href="${PATHS.post(p.slug)}" class="post-card">
@@ -982,7 +993,7 @@ window.FUYAMO_RENDER = (function (C) {
     const others = C.POSTS.filter((x) => x.slug !== p.slug).slice(0, 3);
     return `
       <section class="article-head">
-        <a href="${link('talk')}" class="article-back">← Travel Talk</a>
+        <a href="${link('talk')}" class="article-back">← Blog</a>
         <div class="article-meta"><span>${esc(p.cat)}</span><span>${p.updated ? `UPDATED <time datetime="${p.updated}">${formatDate(p.updated)}</time>` : `<time datetime="${p.date}">${formatDate(p.date)}</time>`} · ${esc(p.read)} READ</span></div>
         <h1>${esc(p.title)}</h1>
         <p>${esc(p.intro)}</p>
@@ -1112,6 +1123,50 @@ window.FUYAMO_RENDER = (function (C) {
 
   // ---------- Contact & not found ----------
 
+  // Named like the Services and Corporate menus, so people find the thing they came for.
+  const CONTACT_TOPICS = ['Group trip', 'Tailored holiday', 'Honeymoon or celebration', 'Family holiday', 'Flights & hotels',
+    'Visa & passport', 'Corporate travel', 'Public Sector travel', 'A booking I have', 'Something else'];
+
+  // A short message form. It goes to the same inbox as the "leave your number" card (a callback request with an email
+  // reply), so the team finds it in the admin's Enquiries. Without JavaScript it posts to the script directly.
+  function contactForm() {
+    return `
+        <form class="quote__card contact-form" id="contact-form" action="${esc(SITE.forms.endpoint)}" method="POST">
+          <input type="hidden" name="_form" value="callback">
+          <input type="hidden" name="Reply by" value="Email">
+          <input type="text" name="_honey" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <h2 class="quote__title">Send us a message</h2>
+          <div class="fields">
+            <label class="field"><span class="field__label">YOUR NAME <b>*</b></span><input name="name" autocomplete="name" required placeholder="Full name"></label>
+            <label class="field"><span class="field__label">EMAIL <b>*</b></span><input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+          </div>
+          <label class="field"><span class="field__label">TOPIC <b>*</b></span><select name="About" required><option value="">Choose a topic</option>${each(CONTACT_TOPICS, (t) => `<option>${esc(t)}</option>`)}</select></label>
+          <label class="field"><span class="field__label">MESSAGE <b>*</b></span><textarea name="Message" rows="4" required placeholder="How can we help?"></textarea></label>
+          <button type="submit" class="send-btn contact-form__send" id="contact-submit"><span class="send-btn__label">Send message</span><span aria-hidden="true">→</span></button>
+          <p class="quote__error" id="contact-error" role="alert" hidden>That didn't go through. Try again, or email us at <a href="mailto:${SITE.email}">${esc(SITE.email)}</a>.</p>
+          <div class="quote__done" id="contact-done" tabindex="-1" hidden>
+            <span class="done-icon" aria-hidden="true">✓</span>
+            <strong class="quote__title" id="contact-done-title">Message sent.</strong>
+            <span class="quote__sub" id="contact-done-text">We'll reply by email within one working day.</span>
+            <button type="button" class="btn-line" data-action="contact-reset">Send another message</button>
+          </div>
+        </form>`;
+  }
+
+  // The office on a Google map (loaded only when scrolled to), with a card that opens the Google listing for directions.
+  function contactMap(A) {
+    const where = [A.street, A.area, A.city, A.postcode, 'South Africa'].join(', ');
+    return `
+        <div class="contact-map">
+          <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(where)}&amp;z=15&amp;output=embed" title="Map of the Fuyamo Travel office in ${esc(A.city)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          <a href="${esc(A.map)}" ${EXT} class="contact-map__card">
+            <span class="contact-map__pin">${pin()}</span>
+            <span class="contact-map__text"><strong>Our office</strong><small>${esc(A.area)}, ${esc(A.city)}</small></span>
+            <span class="contact-map__go">Directions ${ARROW_NE}</span>
+          </a>
+        </div>`;
+  }
+
   function contactPage() {
     const A = SITE.address;
     const option = (href, attrs, tone, ic, title, text) => `
@@ -1125,6 +1180,8 @@ window.FUYAMO_RENDER = (function (C) {
         ${option(WA.group, EXT + CALLBACK, 'amber', 'group', 'Group trips', 'Ask about a ' + SEASON + ' trip')}
         ${option(WA.tailored, EXT + CALLBACK, '', 'heart', 'Tailored travel', 'Plan a private trip')}
         ${option(link('corporate') + '#enquire', '', 'dark', 'briefcase', 'Corporate travel', 'Business &amp; Public Sector')}
+      </section>
+      <section class="wrap contact-main${A ? '' : ' contact-main--solo'}">${contactForm()}${A ? contactMap(A) : ''}
       </section>
       <section class="wrap contact-details">
         <div class="contact-details__box">
@@ -1146,7 +1203,7 @@ window.FUYAMO_RENDER = (function (C) {
         <div class="not-found__links">
           <a href="${link('home')}" class="btn-dark">Home</a>
           <a href="${link('trips')}" class="btn-line">${SEASON} group trips</a>
-          <a href="${link('talk')}" class="btn-line">Travel Talk</a>
+          <a href="${link('talk')}" class="btn-line">Blog</a>
           <a href="${WA.general}" ${EXT + CALLBACK} class="btn-line">WhatsApp us</a>
         </div>
       </section>`;

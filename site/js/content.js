@@ -1,7 +1,7 @@
 /* Fuyamo Travel — site content.
    Everything a non-developer is likely to edit lives here: contact details,
    page titles and the wording of each section. Trips, FAQs, reviews and photos are edited in the admin
-   (fuyamo.co.za/admin), which saves them in content/; Travel Talk articles are in posts/. build.command turns
+   (fuyamo.co.za/admin), which saves them in content/; blog articles are in posts/. build.command turns
    them into js/data.js and js/posts.js, read here. */
 
 window.FUYAMO = (function () {
@@ -81,12 +81,12 @@ window.FUYAMO = (function () {
       description: 'Three steps to your seat: pay a deposit from R2,500, use your name and trip as the reference, and send proof of payment. Pay the balance in instalments.' },
     corporate: { path: 'corporate/', title: 'Corporate travel',
       description: 'Retreats, conferences and official travel for businesses and the public sector. Level 1 B-BBEE, consolidated invoicing and a dedicated accounts manager.' },
-    talk: { path: 'travel-talk/', title: 'Travel Talk',
+    talk: { path: 'travel-talk/', title: 'Travel blog',
       description: 'Tips, guides and trip stories from the Fuyamo Travel team: passports, packing, destination guides and how booking works.' },
     yamo: { path: 'yamo/', title: 'Yamo',
       description: 'Yamo is your passport, journal and trip app in one. Scan your stamps, turn every trip into a page, and book Fuyamo group trips with a deposit and instalments.' },
     contact: { path: 'contact/', title: 'Contact',
-      description: 'WhatsApp, call or email Fuyamo Travel about group trips, tailored travel or corporate travel.' },
+      description: 'Send Fuyamo Travel a message, WhatsApp, call or email us about group trips, tailored travel or corporate travel. Our office is in Centurion.' },
     // A text page: no header photo (link previews use the home one).
     privacy: { path: 'privacy/', title: 'Privacy notice', plain: true,
       description: 'How Fuyamo Travel collects, uses and protects your personal information, in line with POPIA.' },
@@ -285,7 +285,7 @@ window.FUYAMO = (function () {
       ['Cookies', [
         `Google Analytics uses cookies (named _ga) to count visits and see which pages and buttons are used. This website also saves two small settings in your browser: whether you closed the birthday offer, and which wording of the booking button you see. ${ADS
           ? `Our advertising partners, ${ADS}, also set cookies, such as Meta’s _fbp and TikTok’s _ttp, to measure our adverts and show you our trips on their platforms. You can turn off personalised adverts in your Facebook, Instagram, TikTok and Google ad settings.`
-          : 'We don’t use advertising cookies.'} You can clear or block cookies in your browser’s settings.`,
+          : 'We don’t use advertising cookies.'} The map on our Contact page comes from Google Maps, and Google may set its own cookies when it loads. You can clear or block cookies in your browser’s settings.`,
       ]],
       ['How long we keep it', [
         'We keep enquiries for as long as we need them to help you, and no longer than two years. Booking and financial records are kept for five years, as the law requires. After that we delete them or remove anything that identifies you.',
@@ -307,7 +307,7 @@ window.FUYAMO = (function () {
     ],
   };
 
-  // Travel Talk articles live in the posts/ folder (one Markdown file each); build.command turns them into js/posts.js.
+  // Blog articles live in the posts/ folder (one Markdown file each); build.command turns them into js/posts.js.
   const POSTS = window.FUYAMO_POSTS || [];
 
   return {
