@@ -247,7 +247,7 @@ window.FUYAMO = (function () {
   const andList = (items) => items.length > 1 ? items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1] : items.join('');
   const ADS = andList(AD_TAGS);
   const PRIVACY = {
-    updated: '2026-10-27',
+    updated: '2026-10-28',
     intro: 'This notice explains what personal information Fuyamo Travel collects through this website and when you book with us, why we need it, and your rights under the Protection of Personal Information Act (POPIA).',
     sections: [
       ['Who we are', [
@@ -283,7 +283,7 @@ window.FUYAMO = (function () {
         'Some of these services, including Google and Plunk, store information outside South Africa, and international trips mean sharing your details with suppliers abroad. We only do this with services that protect personal information to a standard similar to POPIA, or when it’s needed for the trip you booked.',
       ]],
       ['Cookies', [
-        `Google Analytics uses cookies (named _ga) to count visits and see which pages and buttons are used. This website also saves two small settings in your browser: whether you closed the birthday offer, and which wording of the booking button you see. ${ADS
+        `Google Analytics uses cookies (named _ga) to count visits and see which pages and buttons are used. This website also saves three small things in your browser: whether you closed the birthday offer, which wording of the booking button you see, and, for 30 days, how you found us (for example a Google search or one of our adverts), which is sent with any enquiry you make so we know which adverts work. ${ADS
           ? `Our advertising partners, ${ADS}, also set cookies, such as Meta’s _fbp and TikTok’s _ttp, to measure our adverts and show you our trips on their platforms. You can turn off personalised adverts in your Facebook, Instagram, TikTok and Google ad settings.`
           : 'We don’t use advertising cookies.'} The map on our Contact page comes from Google Maps, and Google may set its own cookies when it loads. You can clear or block cookies in your browser’s settings.`,
       ]],

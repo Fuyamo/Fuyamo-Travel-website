@@ -140,9 +140,10 @@
   }
 
   // Sends a form's details to the Fuyamo enquiries script (saved, emailed to info@); throws if it didn't go through.
-  // Sent as plain text so the browser makes a simple request that Google answers directly.
+  // Sent as plain text so the browser makes a simple request that Google answers directly. How the visitor found us
+  // goes along as "Came from" (and a Google ad's click ID), which the script keeps with the enquiry's other details.
   async function sendToInbox(data) {
-    const res = await fetch(C.SITE.forms.endpoint, { method: 'POST', body: JSON.stringify(data) });
+    const res = await fetch(C.SITE.forms.endpoint, { method: 'POST', body: JSON.stringify(Object.assign({}, data, sourceFields())) });
     const reply = await res.json().catch(() => ({}));
     if (!res.ok || reply.ok !== true) throw new Error(reply.error || 'HTTP ' + res.status);
   }
@@ -663,6 +664,36 @@
     },
   };
 
+  // ---------- Where the visitor came from ----------
+
+  // How this visitor last reached the site from somewhere else in the past 30 days: an advert (Google's click ID, or
+  // utm_ tags we add to our own links), Google search, Instagram, WhatsApp… Typing the address or moving between our
+  // pages doesn't replace it. It's kept in the browser and sent with any enquiry, so the enquiries list shows which
+  // adverts and channels bring enquiries, and a Google ad booking can be reported back to Google Ads by its click ID.
+  const SOURCE_KEY = 'fuyamo-source', SOURCE_DAYS = 30;
+  const REFERRERS = [[/(^|\.)google\./, 'Google search'], [/(^|\.)bing\.com$/, 'Bing search'], [/instagram\.com$/, 'Instagram'],
+    [/facebook\.com$|^fb\.me$/, 'Facebook'], [/tiktok\.com$/, 'TikTok'], [/whatsapp\.com$|^wa\.me$/, 'WhatsApp'],
+    [/^t\.co$|(^|\.)x\.com$|twitter\.com$/, 'X'], [/yamo\.travel$/, 'Yamo']];
+  function noteSource() {
+    const q = new URLSearchParams(window.location.search);
+    let from = document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : '';
+    if (from === window.location.hostname.replace(/^www\./, '')) from = '';
+    const gclid = q.get('gclid') || q.get('gbraid') || q.get('wbraid') || '';
+    const utm = ['utm_source', 'utm_medium', 'utm_campaign'].map((k) => q.get(k)).filter(Boolean);
+    const label = gclid ? 'Google ad' : utm.length ? utm.join(' / ') : q.get('ttclid') ? 'TikTok ad'
+      : q.get('fbclid') ? 'Facebook or Instagram' : from ? (REFERRERS.find(([re]) => re.test(from)) || [0, from])[1] : '';
+    if (!label) return;
+    const path = window.location.pathname;
+    try { localStorage.setItem(SOURCE_KEY, JSON.stringify({ label, gclid, path, at: Date.now() })); } catch (err) { /* no storage: nothing to keep */ }
+  }
+  function sourceFields() {
+    let s;
+    try { s = JSON.parse(localStorage.getItem(SOURCE_KEY) || 'null'); } catch (err) { s = null; }
+    if (!s || Date.now() - s.at > SOURCE_DAYS * 864e5) return { 'Came from': 'Typed our address, or no record' };
+    const day = new Date(s.at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' });
+    return Object.assign({ 'Came from': `${s.label}, landed on ${s.path} (${day})` }, s.gclid ? { 'Google click ID': s.gclid } : {});
+  }
+
   // ---------- Seat button test & analytics ----------
 
   // Sends an event to Google Analytics when it's set up (SITE.analytics.ga4); otherwise does nothing. Enquiries and
@@ -925,6 +956,7 @@
   window.addEventListener('resize', replace);
 
   document.getElementById('year').textContent = new Date().getFullYear();
+  try { noteSource(); } catch (err) { /* an odd address never stops the page */ }
   if (MOUNTS[page]) MOUNTS[page]();
   updateNav();
   onScroll();
